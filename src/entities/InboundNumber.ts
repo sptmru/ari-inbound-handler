@@ -6,7 +6,7 @@ export class InboundNumber {
   id: number;
 
   @Column()
-  number: string;
+  phone: string;
 
   @Column()
   vm_notification: string;
