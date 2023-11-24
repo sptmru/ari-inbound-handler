@@ -1,0 +1,24 @@
+version: '3.8'
+services:
+  mysql:
+    image: mysql:8.0.35
+    container_name: mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    ports:
+      - "${DB_PORT}:${DB_PORT}"
+    volumes:
+      - mysql_volume:/var/lib/mysql
+  stasis-app:
+    container_name: stasis-app
+    ports:
+      - "3000:80"
+      - "7000:7000"
+    restart: unless-stopped
+    build: .
+volumes:
+  mysql_volume:
