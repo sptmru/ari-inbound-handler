@@ -2,8 +2,6 @@ import 'reflect-metadata';
 import * as dotenv from 'dotenv';
 import { DataSource } from 'typeorm';
 
-import { InboundNumber } from './entities/InboundNumber';
-
 const config = dotenv.config().parsed;
 
 const dataSource = new DataSource({
@@ -15,7 +13,7 @@ const dataSource = new DataSource({
   database: config?.DB_NAME || 'inbound_numbers',
   logging: config?.LOG_LEVEL === 'debug',
   synchronize: false,
-  entities: [InboundNumber],
+  entities: ['src/entities/**/*.ts'],
   migrations: ['src/migrations/**/*.ts'],
   subscribers: ['src/subscribers/**/*.ts']
 });
