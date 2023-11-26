@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "type": "module",
   "scripts": {
     "start:dev": "ts-node --swc src/app.ts",
     "build": "tsc && tsc-alias",

@@ -5,9 +5,9 @@ export class InboundNumber {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
+  @Column('varchar', { length: 50, nullable: false, unique: true })
   phone: string;
 
-  @Column()
+  @Column('varchar', { length: 255, nullable: false })
   vm_notification: string;
 }
