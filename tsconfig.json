@@ -34,8 +34,6 @@
     // TypeORM stuff
     "emitDecoratorMetadata": true, // Enables experimental support for emitting type metadata for decorators.
     "experimentalDecorators": true, // Enables experimental support for ES7 decorators.
-
-    "allowImportingTsExtensions": true, // Allow importing .ts files even when they cannot be resolved.
   },
   "tsc-alias": {
     "resolveFullPaths": true,

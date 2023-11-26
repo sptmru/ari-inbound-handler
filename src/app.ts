@@ -3,7 +3,7 @@ import * as dotenv from 'dotenv';
 import { Client } from 'ari-client';
 
 import { logger } from './misc/Logger';
-import { dataSource } from './data-source.ts';
+import { dataSource } from './data-source';
 import { InboundNumberService } from './services/InboundNumberService';
 
 const config = dotenv.config().parsed;
