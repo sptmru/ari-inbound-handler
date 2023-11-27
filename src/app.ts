@@ -23,12 +23,13 @@ const ariUrl = `${ariProtocol}://${ariHost}:${ariPort}`;
     logger.error('Error during Data Source initialization', err);
   }
 
-  const callHandler = async (client: Client): Promise<void> => {
-    client.once('StasisStart', async (event: StasisStart, channel: Channel): Promise<void> => {
-      logger.debug(`Inbound call to ${channel.dialplan.exten}`);
-      const inboundNumber = await InboundNumberService.getInboundNumber(channel.dialplan.exten);
+  const stasisHandler = async (client: Client): Promise<void> => {
+    client.on('StasisStart', async (event: StasisStart, channel: Channel): Promise<void> => {
+      const inboundDID = event.channel.dialplan.exten;
+      logger.debug(`Inbound call to ${inboundDID}`);
+      const inboundNumber = await InboundNumberService.getInboundNumber(inboundDID);
       if (!inboundNumber) {
-        logger.debug(`Number ${channel.dialplan.exten} is not in the database`);
+        logger.debug(`Number ${inboundDID} is not in the database`);
         try {
           await channel.continueInDialplan();
           logger.debug(`Channel ${channel.name} continued in dialplan`);
@@ -37,11 +38,20 @@ const ariUrl = `${ariProtocol}://${ariHost}:${ariPort}`;
         }
         return;
       }
-      console.dir(event);
+
+      try {
+        logger.debug(`Redirecting channel ${channel.name} to voicemail ${inboundNumber.voicemail}`);
+        await channel.continueInDialplan({
+          context: config?.VOICEMAIL_CONTEXT,
+          extension: inboundNumber.voicemail,
+          priority: 1
+        });
+      } catch (err) {
+        logger.error(`Error while redirecting channel ${channel.name} to voicemail ${inboundNumber.voicemail}`, err);
+      }
     });
-    client.once('StasisEnd', async (event: StasisEnd, channel: Channel): Promise<void> => {
-      logger.debug(`StasisEnd on ${channel.name}`);
-      console.dir(event);
+    client.on('StasisEnd', async (event: StasisEnd, channel: Channel): Promise<void> => {
+      logger.debug(`${event.type} on ${channel.name}`);
     });
 
     await client.start(config?.ARI_APP_NAME || 'inbound-app');
@@ -49,7 +59,7 @@ const ariUrl = `${ariProtocol}://${ariHost}:${ariPort}`;
 
   ari
     .connect(ariUrl, ariUsername, ariPassword)
-    .then(callHandler)
+    .then(stasisHandler)
     .catch(err => {
       logger.error(`Error connecting to ARI: ${err}`);
       process.exit(1);
