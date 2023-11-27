@@ -1,6 +1,6 @@
 import * as ari from 'ari-client';
 import * as dotenv from 'dotenv';
-import { Client } from 'ari-client';
+import { Client, StasisStart, StasisEnd, Channel } from 'ari-client';
 
 import { logger } from './misc/Logger';
 import { dataSource } from './data-source';
@@ -23,8 +23,8 @@ const ariUrl = `${ariProtocol}://${ariHost}:${ariPort}`;
     logger.error('Error during Data Source initialization', err);
   }
 
-  const callHandler = async (client: Client) => {
-    client.once('StasisStart', async (event, channel) => {
+  const callHandler = async (client: Client): Promise<void> => {
+    client.once('StasisStart', async (event: StasisStart, channel: Channel): Promise<void> => {
       logger.debug(`Inbound call to ${channel.dialplan.exten}`);
       const inboundNumber = await InboundNumberService.getInboundNumber(channel.dialplan.exten);
       if (!inboundNumber) {
@@ -39,7 +39,7 @@ const ariUrl = `${ariProtocol}://${ariHost}:${ariPort}`;
       }
       console.dir(event);
     });
-    client.once('StasisEnd', async (event, channel) => {
+    client.once('StasisEnd', async (event: StasisEnd, channel: Channel): Promise<void> => {
       logger.debug(`StasisEnd on ${channel.name}`);
       console.dir(event);
     });
