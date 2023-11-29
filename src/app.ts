@@ -41,6 +41,7 @@ const ariUrl = `${ariProtocol}://${ariHost}:${ariPort}`;
 
       try {
         const playback = client.Playback();
+        await channel.answer();
         await channel.play({ media: `sound:${inboundNumber.message}` }, playback);
         logger.debug(`Redirecting channel ${channel.name} to voicemail ${inboundNumber.voicemail}`);
         await channel.continueInDialplan({
