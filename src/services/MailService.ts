@@ -21,18 +21,18 @@ export class MailService {
     });
   }
 
-  static createMailOptions(text: string, attachments?: string[]): Mail.Options {
+  static createMailOptions(text: string, subject: string, attachments?: string[]): Mail.Options {
     return {
       from: config?.MAIL_FROM || '',
-      subject: config?.MAIL_SUBJECT || '',
+      subject,
       text,
       attachments: attachments?.map(attachment => ({ path: attachment }))
     };
   }
 
-  static async sendMail(to: string, text: string, attachments?: string[]): Promise<boolean> {
+  static async sendMail(to: string, text: string, subject: string, attachments?: string[]): Promise<boolean> {
     const transporter = MailService.createTransport();
-    const mail = MailService.createMailOptions(text, attachments);
+    const mail = MailService.createMailOptions(text, subject, attachments);
     mail.to = to;
 
     try {

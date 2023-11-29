@@ -36,7 +36,10 @@ const config = dotenv.config().parsed;
             const emails = InboundNumberService.getListOfEmails(inboundNumberData);
             for (const email of emails) {
               const emailText = `CallerID: ${voicemailFile}\nCalled number: ${inboundNumberData.phone}`;
-              await MailService.sendMail(email, emailText, [`${voicemailDir}/${dirName}/INBOX/${voicemailFile}.wav`]);
+              const subject = `${inboundNumberData.court_name} New Voicemail From ${voicemail.callerid}`;
+              await MailService.sendMail(email, emailText, subject, [
+                `${voicemailDir}/${dirName}/INBOX/${voicemailFile}.wav`
+              ]);
             }
           }
         }
