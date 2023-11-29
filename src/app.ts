@@ -41,6 +41,7 @@ const ariUrl = `${ariProtocol}://${ariHost}:${ariPort}`;
 
       try {
         logger.debug(`Redirecting channel ${channel.name} to voicemail ${inboundNumber.voicemail}`);
+        await channel.answer();
         await channel.setChannelVar({ variable: 'MESSAGE', value: inboundNumber.message });
         await channel.continueInDialplan({
           context: config?.VOICEMAIL_CONTEXT,
