@@ -5,7 +5,7 @@ import { logger } from '../misc/Logger';
 import Mail from 'nodemailer/lib/mailer';
 
 const config = dotenv.config().parsed;
-export class MailSender {
+export class MailService {
   static createTransport() {
     return nodemailer.createTransport({
       host: config?.SMTP_HOST || 'smtp.example.com',
@@ -26,13 +26,13 @@ export class MailSender {
       from: config?.MAIL_FROM || '',
       subject: config?.MAIL_SUBJECT || '',
       text,
-      attachments: attachments?.map(attachment => ({ filename: attachment }))
+      attachments: attachments?.map(attachment => ({ path: attachment }))
     };
   }
 
   static async sendMail(to: string, text: string, attachments?: string[]): Promise<boolean> {
-    const transporter = MailSender.createTransport();
-    const mail = MailSender.createMailOptions(text, attachments);
+    const transporter = MailService.createTransport();
+    const mail = MailService.createMailOptions(text, attachments);
     mail.to = to;
 
     try {

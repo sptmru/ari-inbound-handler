@@ -2,21 +2,53 @@ import fs from 'fs';
 import readline from 'readline';
 import path from 'path';
 
+import { dataSource } from '../data-source';
 import { Voicemail } from '../entities/Voicemail';
 import { logger } from '../misc/Logger';
 
+async function isDirectory(path: string): Promise<boolean> {
+  // fs.stat or fs.lstat are pretty much the same in this case. fs.lstat does not follow symlinks.
+  const stats = await fs.promises.lstat(path);
+  return stats.isDirectory();
+}
+
+async function isFile(path: string): Promise<boolean> {
+  const stats = await fs.promises.lstat(path);
+  return stats.isFile();
+}
+
 export class VoicemailService {
-  static async getVoicemailFiles(voicemailDir: string): Promise<string[]> {
+  static async getVoicemailFiles(voicemailDir: string): Promise<{ [directory: string]: string[] } | {}> {
     try {
-      const files = await fs.promises.readdir(voicemailDir);
-      return files.filter(file => file.endsWith('.txt')).map(file => path.basename(file, '.txt'));
+      const result: { [directory: string]: string[] } = {};
+      const baseDir = path.resolve(voicemailDir);
+      const folders = await fs.promises.readdir(baseDir);
+
+      for (const folder of folders) {
+        const inboxPath = path.join(baseDir, folder, 'INBOX');
+        if (fs.existsSync(inboxPath) && (await isDirectory(inboxPath))) {
+          const files = await fs.promises.readdir(inboxPath);
+          const fileNames = (
+            await Promise.all(
+              files.map(async file => {
+                const filePath = path.join(inboxPath, file);
+                if (path.extname(file) === '.txt' && (await isFile(filePath))) return file;
+                return null;
+              })
+            )
+          ).filter(Boolean) as string[];
+          result[folder] = fileNames.map(file => path.parse(file).name);
+        }
+      }
+      return result;
     } catch (err) {
       logger.error(`Error reading voicemail directory ${voicemailDir}`, err);
-      return [];
+      return {};
     }
   }
-  static async parseVoicemailTextFile(filePath: string): Promise<Voicemail> {
-    const voicemail = {};
+  static async parseVoicemailTextFile(voicemailDir: string, voicemailFilename: string): Promise<Voicemail> {
+    const voicemail = { filename: voicemailFilename };
+    const filePath = `${voicemailDir}/${voicemailFilename}.txt`;
 
     const fileStream = fs.createReadStream(filePath);
 
@@ -33,5 +65,24 @@ export class VoicemailService {
     }
 
     return voicemail as Voicemail;
+  }
+
+  static async getVoicemailByFilename(mailbox: string, filename: string): Promise<Voicemail | null> {
+    return await dataSource.getRepository(Voicemail).findOne({ where: { filename, origmailbox: mailbox } });
+  }
+
+  static async markVoicemailAsSent(voicemail: Voicemail): Promise<void> {
+    voicemail.sent = true;
+    await dataSource.getRepository(Voicemail).save(voicemail);
+  }
+
+  static async addVoicemail(voicemail: Voicemail): Promise<Voicemail | null> {
+    try {
+      await dataSource.getRepository(Voicemail).save(voicemail);
+      return voicemail;
+    } catch (err) {
+      logger.error(`Error saving voicemail ${voicemail.filename}`, err);
+      return null;
+    }
   }
 }

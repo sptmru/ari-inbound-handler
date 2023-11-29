@@ -15,9 +15,8 @@ services:
       - mysql_volume:/var/lib/mysql
   stasis-app:
     container_name: stasis-app
-    ports:
-      - "3000:80"
-      - "7000:7000"
+    volumes:
+      - "/var/spool/asterisk/voicemail/default:/opt/voicemail"
     restart: unless-stopped
     build: .
 volumes:
