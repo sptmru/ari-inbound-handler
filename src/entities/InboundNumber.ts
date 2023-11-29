@@ -13,4 +13,7 @@ export class InboundNumber {
 
   @Column('varchar', { length: 255, nullable: false })
   vm_notification: string;
+
+  @Column('varchar', { length: 255, nullable: false })
+  court_name: string;
 }
