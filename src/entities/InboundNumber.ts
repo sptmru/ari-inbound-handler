@@ -16,4 +16,7 @@ export class InboundNumber {
 
   @Column('varchar', { length: 255, nullable: false })
   court_name: string;
+
+  @Column('varchar', { length: 255, nullable: true })
+  message: string;
 }
