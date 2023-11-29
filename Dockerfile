@@ -1,12 +1,14 @@
 FROM node:18-alpine
 
-WORKDIR /app/
+RUN mkdir /app
+WORKDIR /app
 
 COPY package*.json ./
+COPY .env ./
 
 RUN npm install
 
-COPY * ./
+COPY . .
 
 RUN npm run migrations:run
 

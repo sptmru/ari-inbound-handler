@@ -16,6 +16,7 @@ services:
   stasis-app:
     container_name: stasis-app
     volumes:
+      - ".:/app"
       - "/var/spool/asterisk/voicemail/default:/opt/voicemail"
     restart: unless-stopped
     build: .
