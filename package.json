@@ -28,8 +28,10 @@
     "tsc-alias": "^1.8.8"
   },
   "dependencies": {
+    "@types/fluent-ffmpeg": "^2.1.24",
     "ari-client": "^2.2.0",
     "dotenv": "^16.3.1",
+    "fluent-ffmpeg": "^2.1.2",
     "mysql2": "^3.6.5",
     "nodemailer": "^6.9.7",
     "reflect-metadata": "^0.1.13",

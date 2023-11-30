@@ -32,6 +32,10 @@ const config = dotenv.config().parsed;
           voicemail = await VoicemailService.addVoicemail(voicemailData);
           if (voicemail === null) continue;
           const inboundNumberData = await InboundNumberService.getInboundNumberByVoicemail(voicemail.origmailbox);
+          await VoicemailService.convertWavToMp3(
+            `${voicemailDir}/${dirName}/INBOX/${voicemailFile}.wav`,
+            `${voicemailDir}/${dirName}/INBOX/${voicemailFile}.mp3`
+          );
           if (inboundNumberData) {
             const emails = InboundNumberService.getListOfEmails(inboundNumberData);
             for (const email of emails) {

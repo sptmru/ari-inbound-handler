@@ -1,6 +1,7 @@
 import fs from 'fs';
 import readline from 'readline';
 import path from 'path';
+import ffmpeg from 'fluent-ffmpeg';
 
 import { dataSource } from '../data-source';
 import { Voicemail } from '../entities/Voicemail';
@@ -84,5 +85,21 @@ export class VoicemailService {
       logger.error(`Error saving voicemail ${voicemail.filename}`, err);
       return null;
     }
+  }
+
+  static convertWavToMp3(wavFilePath: string, mp3FilePath: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      ffmpeg(wavFilePath)
+        .output(mp3FilePath)
+        .on('end', () => {
+          console.log('Conversion ended');
+          resolve();
+        })
+        .on('error', (err: any) => {
+          console.log('Error occurred: ' + err.message);
+          reject();
+        })
+        .run();
+    });
   }
 }
