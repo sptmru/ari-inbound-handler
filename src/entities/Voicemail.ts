@@ -1,5 +1,10 @@
 import { Entity, PrimaryGeneratedColumn, Column, Index } from 'typeorm';
 
+enum isListened {
+  LISTENED = 'Y',
+  NOT_LISTENED = 'N'
+}
+
 @Entity('voicemail')
 @Index(['filename', 'origmailbox'], { unique: true })
 export class Voicemail {
@@ -53,4 +58,7 @@ export class Voicemail {
 
   @Column('bool', { default: false })
   sent: boolean;
+
+  @Column({ type: 'enum', enum: isListened, default: isListened.NOT_LISTENED })
+  is_listened?: string;
 }

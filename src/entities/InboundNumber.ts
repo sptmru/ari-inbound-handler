@@ -19,4 +19,7 @@ export class InboundNumber {
 
   @Column('varchar', { length: 255, nullable: true })
   message: string;
+
+  @Column('int', { default: 0, nullable: false })
+  court_id: string;
 }

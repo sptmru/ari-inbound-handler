@@ -110,4 +110,21 @@ export class VoicemailService {
         .run();
     });
   }
+
+  static async countNotListenedForCourt(mailbox: string): Promise<number> {
+    return await dataSource
+      .getRepository(Voicemail)
+      .createQueryBuilder('entity')
+      .where('entity.origmailbox = :mailbox', { mailbox })
+      .andWhere('entity.is_listened = :isListened', { isListened: 'N' })
+      .getCount();
+  }
+
+  static async countNotListened(): Promise<number> {
+    return await dataSource
+      .getRepository(Voicemail)
+      .createQueryBuilder('entity')
+      .where('entity.is_listened = :isListened', { isListened: 'N' })
+      .getCount();
+  }
 }

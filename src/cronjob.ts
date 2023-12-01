@@ -9,6 +9,8 @@ import { MailService } from './services/MailService';
 
 const config = dotenv.config().parsed;
 
+const pushNotificationsUrl = config?.PUSH_NOTIFICATION_URL || 'https://google.com';
+
 (async () => {
   try {
     await dataSource.initialize();
@@ -20,6 +22,8 @@ const config = dotenv.config().parsed;
   const voicemailDir = config?.VOICEMAIL_DIRECTORY || '';
 
   const voicemailFileNames = await VoicemailService.getVoicemailFiles(voicemailDir);
+
+  // TODO: needs refactoring
 
   if (voicemailFileNames !== null) {
     for (const [dirName, files] of Object.entries(voicemailFileNames)) {
@@ -40,6 +44,9 @@ const config = dotenv.config().parsed;
           voicemail = await VoicemailService.addVoicemail(voicemailData);
           if (voicemail === null) continue;
           const inboundNumberData = await InboundNumberService.getInboundNumberByVoicemail(voicemail.origmailbox);
+          if (inboundNumberData) {
+            await InboundNumberService.sendPushNotification(pushNotificationsUrl, voicemail, inboundNumberData);
+          }
           await VoicemailService.convertWavToMp3(
             `${voicemailDir}/${dirName}/INBOX/${voicemailFile}.wav`,
             `${voicemailDir}/${dirName}/INBOX/${voicemailFile}.mp3`
