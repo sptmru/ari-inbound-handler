@@ -9,8 +9,6 @@ import { MailService } from './services/MailService';
 
 const config = dotenv.config().parsed;
 
-const sentPrefix = 'sent_';
-
 (async () => {
   try {
     await dataSource.initialize();
@@ -26,7 +24,10 @@ const sentPrefix = 'sent_';
   if (voicemailFileNames !== null) {
     for (const [dirName, files] of Object.entries(voicemailFileNames)) {
       for (const voicemailFile of files as string[]) {
-        if (voicemailFile.startsWith(sentPrefix)) {
+        const voicemailAlreadySent = await VoicemailService.fileExists(
+          `${voicemailDir}/${dirName}/INBOX/${voicemailFile}.sent`
+        );
+        if (voicemailAlreadySent) {
           continue;
         }
         const voicemailData = await VoicemailService.parseVoicemailTextFile(
@@ -35,10 +36,7 @@ const sentPrefix = 'sent_';
         );
         let voicemail = await VoicemailService.getVoicemailByFilename(dirName, voicemailFile);
         if (voicemail === null) {
-          fs.renameSync(
-            `${voicemailDir}/${dirName}/INBOX/${voicemailFile}.txt`,
-            `${voicemailDir}/${dirName}/INBOX/${sentPrefix}${voicemailFile}.txt`
-          );
+          await fs.promises.writeFile(`${voicemailDir}/${dirName}/INBOX/${voicemailFile}.sent`, '');
           voicemail = await VoicemailService.addVoicemail(voicemailData);
           if (voicemail === null) continue;
           const inboundNumberData = await InboundNumberService.getInboundNumberByVoicemail(voicemail.origmailbox);

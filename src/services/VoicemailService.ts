@@ -87,6 +87,14 @@ export class VoicemailService {
     }
   }
 
+  static async fileExists(filePath: string): Promise<boolean> {
+    try {
+      await fs.promises.access(filePath, fs.constants.F_OK);
+      return true; // File exists
+    } catch (err) {
+      return false; // File does not exist
+    }
+  }
   static convertWavToMp3(wavFilePath: string, mp3FilePath: string): Promise<void> {
     return new Promise((resolve, reject) => {
       ffmpeg(wavFilePath)
