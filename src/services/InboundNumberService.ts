@@ -31,8 +31,12 @@ export class InboundNumberService {
       total_not_listened_vm: await VoicemailService.countNotListened()
     };
 
+    const data = Object.keys(payload)
+      .map(key => `${key}=${encodeURIComponent(payload[key])}`)
+      .join('&');
+
     try {
-      await axios.post(url, payload);
+      await axios.post(url, data);
       logger.debug(`Push notification sent to ${url} for voicemail ${payload.voicemail_id}`);
     } catch (error) {
       logger.error(`Push notification sending error: ${error}`);
