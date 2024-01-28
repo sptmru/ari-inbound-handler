@@ -7,4 +7,5 @@ export type AriData = {
   client: Client;
   appName: string;
   trunkName: string;
+  callerId: string;
 };

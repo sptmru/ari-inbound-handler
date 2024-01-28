@@ -114,7 +114,12 @@ export class InboundNumberService {
     });
 
     try {
-      await internalChannel.originate({ endpoint: `PJSIP/${internalNumber}`, app: appName, appArgs: 'dialed' });
+      await internalChannel.originate({
+        endpoint: `PJSIP/${internalNumber}`,
+        app: appName,
+        appArgs: 'dialed',
+        callerId: `MT <${incomingChannel.caller.number}>`
+      });
       logger.debug(`Calling PJSIP/${internalNumber} on channel ${internalChannel.id}`);
       return true;
     } catch (err) {
@@ -132,7 +137,7 @@ export class InboundNumberService {
   }
 
   static async bridgeIncomingCallWithExternalNumber(externalNumber: string, ariData: AriData): Promise<boolean> {
-    const { client, channel: incomingChannel, appName, trunkName } = ariData;
+    const { client, channel: incomingChannel, appName, trunkName, callerId } = ariData;
     const externalChannel = client.Channel();
 
     incomingChannel.once('StasisEnd', () => {
@@ -174,7 +179,8 @@ export class InboundNumberService {
       await externalChannel.originate({
         endpoint: `PJSIP/${externalNumber}@${trunkName}`,
         app: appName,
-        appArgs: 'dialed'
+        appArgs: 'dialed',
+        callerId
       });
       logger.debug(`Calling PJSIP/${externalNumber} on channel ${externalChannel.id}`);
       return true;

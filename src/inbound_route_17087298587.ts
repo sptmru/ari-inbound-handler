@@ -18,6 +18,7 @@ const ariUrl = `${ariProtocol}://${ariHost}:${ariPort}`;
 const appName: string = 'inbound_route_17087298587';
 const trunkName: string = 'twilio-na-us';
 const greetingSound: string = 'speech_17087298587';
+const callerId: string = '+17087298587';
 
 (async () => {
   try {
@@ -42,7 +43,8 @@ const greetingSound: string = 'speech_17087298587';
           playback,
           client,
           appName,
-          trunkName
+          trunkName,
+          callerId
         })
       );
 
