@@ -19,7 +19,7 @@ async function isFile(path: string): Promise<boolean> {
 }
 
 export class VoicemailService {
-  static async getVoicemailFiles(voicemailDir: string): Promise<{ [directory: string]: string[] } | {}> {
+  static async getVoicemailFiles(voicemailDir: string): Promise<{ [directory: string]: string[] } | object> {
     try {
       const result: { [directory: string]: string[] } = {};
       const baseDir = path.resolve(voicemailDir);
@@ -60,7 +60,7 @@ export class VoicemailService {
 
     for await (const line of rl) {
       const splitLine = line.split('=');
-      if (splitLine[0]) {
+      if (splitLine[0] !== undefined && splitLine.length > 0) {
         voicemail[splitLine[0]] = splitLine[1];
       }
     }
@@ -103,7 +103,7 @@ export class VoicemailService {
           console.log('Conversion ended');
           resolve();
         })
-        .on('error', (err: any) => {
+        .on('error', err => {
           console.log('Error occurred: ' + err.message);
           reject();
         })
