@@ -50,7 +50,7 @@ const callerId: string = '+17087298587';
       logger.debug(`${event.type} on ${channel.name}`);
     });
 
-    await client.start('inbound_route_17087298587');
+    await client.start(config.ari.app17087298587);
   };
 
   ari
