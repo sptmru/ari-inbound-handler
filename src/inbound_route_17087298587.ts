@@ -1,21 +1,16 @@
 import * as ari from 'ari-client';
-import * as dotenv from 'dotenv';
 import { Client, StasisStart, StasisEnd, Channel, Playback } from 'ari-client';
 
 import { logger } from './misc/Logger';
 import { dataSource } from './data-source';
 import { InboundNumberService } from './services/InboundNumberService';
+import { config } from './config/config';
 
-const config = dotenv.config().parsed;
+const ariUsername = config.ari.username;
+const ariPassword = config.ari.password;
+const ariUrl = config.ari.url;
 
-const ariHost = config?.ARI_HOST || 'localhost';
-const ariPort = config?.ARI_PORT || '8088';
-const ariProtocol = config?.ARI_PROTOCOL || 'http';
-const ariUsername = config?.ARI_USERNAME || 'asterisk';
-const ariPassword = config?.ARI_PASSWORD || 'asterisk';
-const ariUrl = `${ariProtocol}://${ariHost}:${ariPort}`;
-
-const appName: string = 'inbound_route_17087298587';
+const appName = config.ari.app17087298587;
 const trunkName: string = 'twilio-na-us';
 const greetingSound: string = 'speech_17087298587';
 const callerId: string = '+17087298587';

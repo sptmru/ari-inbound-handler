@@ -1,4 +1,3 @@
-import * as dotenv from 'dotenv';
 import fs from 'fs';
 
 import { logger } from './misc/Logger';
@@ -6,10 +5,9 @@ import { dataSource } from './data-source';
 import { VoicemailService } from './services/VoicemailService';
 import { InboundNumberService } from './services/InboundNumberService';
 import { MailService } from './services/MailService';
+import { config } from './config/config';
 
-const config = dotenv.config().parsed;
-
-const pushNotificationsUrl = config?.PUSH_NOTIFICATION_URL || 'https://google.com';
+const pushNotificationsUrl = config.pushNotificationsUrl;
 
 (async () => {
   try {
@@ -19,7 +17,7 @@ const pushNotificationsUrl = config?.PUSH_NOTIFICATION_URL || 'https://google.co
     logger.error('Error during Data Source initialization', err);
   }
 
-  const voicemailDir = config?.VOICEMAIL_DIRECTORY || '';
+  const voicemailDir = config.voicemail.directory;
 
   const voicemailFileNames = await VoicemailService.getVoicemailFiles(voicemailDir);
 

@@ -1,17 +1,15 @@
 import 'reflect-metadata';
-import * as dotenv from 'dotenv';
 import { DataSource } from 'typeorm';
-
-const config = dotenv.config().parsed;
+import { config } from './config/config';
 
 const dataSource = new DataSource({
   type: 'mysql',
-  host: config?.DB_HOST || 'localhost',
-  port: parseInt(config?.DB_PORT || '3306'),
-  username: config?.DB_USERNAME || 'root',
-  password: config?.DB_PASSWORD || '',
-  database: config?.DB_NAME || 'inbound_numbers',
-  logging: config?.LOG_LEVEL === 'debug',
+  host: config.db.host,
+  port: config.db.port,
+  username: config.db.username,
+  password: config.db.password,
+  database: config.db.name,
+  logging: config.log.level === 'debug',
   synchronize: false,
   entities: ['src/entities/**/*.ts'],
   migrations: ['src/migrations/**/*.ts'],

@@ -1,19 +1,14 @@
 import * as ari from 'ari-client';
-import * as dotenv from 'dotenv';
 import { Client, StasisStart, StasisEnd, Channel } from 'ari-client';
 
 import { logger } from './misc/Logger';
 import { dataSource } from './data-source';
 import { InboundNumberService } from './services/InboundNumberService';
+import { config } from './config/config';
 
-const config = dotenv.config().parsed;
-
-const ariHost = config?.ARI_HOST || 'localhost';
-const ariPort = config?.ARI_PORT || '8088';
-const ariProtocol = config?.ARI_PROTOCOL || 'http';
-const ariUsername = config?.ARI_USERNAME || 'asterisk';
-const ariPassword = config?.ARI_PASSWORD || 'asterisk';
-const ariUrl = `${ariProtocol}://${ariHost}:${ariPort}`;
+const ariUsername = config.ari.username;
+const ariPassword = config.ari.password;
+const ariUrl = config.ari.url;
 
 (async () => {
   try {
@@ -44,7 +39,7 @@ const ariUrl = `${ariProtocol}://${ariHost}:${ariPort}`;
         await channel.answer();
         await channel.setChannelVar({ variable: 'MESSAGE', value: inboundNumber.message });
         await channel.continueInDialplan({
-          context: config?.VOICEMAIL_CONTEXT,
+          context: config.voicemail.context,
           extension: inboundNumber.voicemail,
           priority: 1
         });
@@ -56,7 +51,7 @@ const ariUrl = `${ariProtocol}://${ariHost}:${ariPort}`;
       logger.debug(`${event.type} on ${channel.name}`);
     });
 
-    await client.start(config?.ARI_APP_NAME || 'inbound-app');
+    await client.start(config.ari.app);
   };
 
   ari

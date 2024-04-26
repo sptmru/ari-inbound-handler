@@ -1,19 +1,18 @@
-import * as dotenv from 'dotenv';
 import nodemailer from 'nodemailer';
 
 import { logger } from '../misc/Logger';
 import Mail from 'nodemailer/lib/mailer';
+import { config } from '../config/config';
 
-const config = dotenv.config().parsed;
 export class MailService {
   static createTransport() {
     return nodemailer.createTransport({
-      host: config?.SMTP_HOST || 'smtp.example.com',
-      port: Number(config?.SMTP_PORT) || 587,
-      secure: Boolean(config?.SMTP_SECURE) || false, // upgrade later with STARTTLS
+      host: config.smtp.host,
+      port: config.smtp.port,
+      secure: config.smtp.secure,
       auth: {
-        user: config?.SMTP_USERNAME || 'username',
-        pass: config?.SMTP_PASSWORD || 'password'
+        user: config.smtp.username,
+        pass: config.smtp.password
       },
       tls: {
         ciphers: 'SSLv3'
@@ -23,7 +22,7 @@ export class MailService {
 
   static createMailOptions(text: string, subject: string, attachments?: string[]): Mail.Options {
     return {
-      from: config?.MAIL_FROM || '',
+      from: config.smtp.mailFrom,
       subject,
       text,
       attachments: attachments?.map(attachment => ({ path: attachment }))

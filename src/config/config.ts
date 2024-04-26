@@ -19,7 +19,9 @@ export const config = {
     port: parsedConfig?.SMTP_PORT != null ? parseInt(parsedConfig.SMTP_PORT) : 587,
     secure: parsedConfig?.SMTP_SECURE != null ? parsedConfig.SMTP_SECURE === 'true' : false,
     username: parsedConfig?.SMTP_USERNAME != null ? parsedConfig.SMTP_USERNAME : 'username',
-    password: parsedConfig?.SMTP_PASSWORD != null ? parsedConfig.SMTP_PASSWORD : 'password'
+    password: parsedConfig?.SMTP_PASSWORD != null ? parsedConfig.SMTP_PASSWORD : 'password',
+    mailFrom: parsedConfig?.MAIL_FROM != null ? parsedConfig.MAIL_FROM : 'alert@gmail.com',
+    mailSubject: parsedConfig?.MAIL_SUBJECT != null ? parsedConfig.MAIL_SUBJECT : 'New Voicemail'
   },
   ari: {
     host: parsedConfig?.ARI_HOST != null ? parsedConfig.ARI_HOST : 'localhost',
