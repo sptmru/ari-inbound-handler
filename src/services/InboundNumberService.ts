@@ -83,12 +83,7 @@ export class InboundNumberService {
     incomingChannel.once('StasisEnd', async () => {
       logger.debug(`Incoming channel ${incomingChannel.id} got StasisEnd`);
 
-      if (liveRecording) {
-        logger.debug(`Stopping call recording on channel ${incomingChannel.id}`);
-        await liveRecording.stop();
-      } else {
-        logger.debug(`No live recording to stop on channel ${incomingChannel.id}`);
-      }
+      await InboundNumberService.stopRecording(incomingChannel, liveRecording);
 
       logger.debug(`Hanging up internal channel ${internalChannel.id}`);
       await this.hangupChannel(internalChannel);
@@ -154,12 +149,7 @@ export class InboundNumberService {
     incomingChannel.once('StasisEnd', async () => {
       logger.debug(`Incoming channel ${incomingChannel.id} got StasisEnd`);
 
-      if (ariData?.liveRecording) {
-        logger.debug(`Stopping call recording on channel ${incomingChannel.id}`);
-        await ariData.liveRecording.stop();
-      } else {
-        logger.debug(`No live recording to stop on channel ${incomingChannel.id}`);
-      }
+      await InboundNumberService.stopRecording(incomingChannel, ariData.liveRecording);
 
       logger.debug(`Hanging up external channel ${externalChannel.id}`);
       await this.hangupChannel(externalChannel);
@@ -215,6 +205,19 @@ export class InboundNumberService {
       logger.debug(`Hangup channel ${channel.id}`);
     } catch (err) {
       logger.debug(`Failed to hangup channel ${channel.id} — nothing to hangup`);
+    }
+  }
+
+  static async stopRecording(channel: Channel, liveRecording: LiveRecording | undefined): Promise<void> {
+    if (!liveRecording) {
+      logger.debug(`No live recording found for channel ${channel.id}`);
+      return;
+    }
+    try {
+      await liveRecording?.stop();
+      logger.debug(`Recording on channel ${channel.id} stopped`);
+    } catch (err) {
+      logger.debug(`Failed to stop recording on channel ${channel.id} — nothing to stop`);
     }
   }
 
