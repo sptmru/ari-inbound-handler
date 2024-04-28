@@ -47,8 +47,11 @@ export const config = {
     directory: parsedConfig?.VOICEMAIL_DIRECTORY != null ? parsedConfig.VOICEMAIL_DIRECTORY : '/opt/voicemail'
   },
   callRecording: {
-    directory:
-      parsedConfig?.CALL_RECORDING_DIRECTORY != null ? parsedConfig.CALL_RECORDING_DIRECTORY : '/opt/recordings'
+    directory: parsedConfig?.CALL_RECORDING_DIRECTORY != null ? parsedConfig.CALL_RECORDING_DIRECTORY : 'finished',
+    baseDirectory:
+      parsedConfig?.CALL_RECORDING_BASE_DIRECTORY != null
+        ? parsedConfig.CALL_RECORDING_BASE_DIRECTORY
+        : '/var/spool/asterisk/recording'
   },
   trunkName: parsedConfig?.TRUNK_NAME != null ? parsedConfig.TRUNK_NAME : 'twilio-na-us',
   greetingSound: parsedConfig?.GREETING_SOUND != null ? parsedConfig.GREETING_SOUND : 'speech_17087298587',
