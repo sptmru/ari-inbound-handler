@@ -42,7 +42,8 @@ const appName = config.ari.app17087298587;
           client,
           appName,
           trunkName: config.trunkName,
-          callerId: config.callerId
+          callerId: config.callerId,
+          inboundDID
         })
       );
 
