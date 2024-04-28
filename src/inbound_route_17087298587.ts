@@ -11,9 +11,6 @@ const ariPassword = config.ari.password;
 const ariUrl = config.ari.url;
 
 const appName = config.ari.app17087298587;
-const trunkName: string = 'twilio-na-us';
-const greetingSound: string = 'speech_17087298587';
-const callerId: string = '+17087298587';
 
 (async () => {
   try {
@@ -24,6 +21,7 @@ const callerId: string = '+17087298587';
   }
 
   const stasisHandler = async (client: Client): Promise<void> => {
+    logger.debug(`ARI app ${appName} started`);
     client.on('StasisStart', async (event: StasisStart, channel: Channel): Promise<void> => {
       const inboundDID = event.channel.dialplan.exten;
       logger.debug(`Inbound call to ${inboundDID}`);
@@ -38,13 +36,13 @@ const callerId: string = '+17087298587';
           playback,
           client,
           appName,
-          trunkName,
-          callerId
+          trunkName: config.trunkName,
+          callerId: config.callerId
         })
       );
 
-      logger.debug(`Playing ${greetingSound} to ${channel.id}`);
-      await channel.play({ media: [`sound:${greetingSound}`, `sound:${greetingSound}`] }, playback);
+      logger.debug(`Playing ${config.greetingSound} to ${channel.id}`);
+      await channel.play({ media: [`sound:${config.greetingSound}`, `sound:${config.greetingSound}`] }, playback);
     });
     client.on('StasisEnd', async (event: StasisEnd, channel: Channel): Promise<void> => {
       logger.debug(`${event.type} on ${channel.name}`);
