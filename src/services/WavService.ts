@@ -16,8 +16,7 @@ export class WavService {
 
   static async getWavFileDuration(filepath: string): Promise<number> {
     try {
-      // FIXME: remove directoryPrefix
-      const duration = await this.asyncInfoByFilename(`/Users/sptm/OrbStack/asterisk20${filepath}`);
+      const duration = await this.asyncInfoByFilename(`${filepath}`);
       return Math.ceil(duration);
     } catch (err) {
       logger.error(`Error reading WAV file ${filepath}: ${err.message}`);
