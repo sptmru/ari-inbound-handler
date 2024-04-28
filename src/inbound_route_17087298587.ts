@@ -24,10 +24,15 @@ const appName = config.ari.app17087298587;
     logger.debug(`ARI app ${appName} started`);
     client.on('StasisStart', async (event: StasisStart, channel: Channel): Promise<void> => {
       const inboundDID = event.channel.dialplan.exten;
+      if (inboundDID === 's') {
+        return;
+      }
+
       logger.debug(`Inbound call to ${inboundDID}`);
 
       const internalNumber: Array<string> = [];
       const playback: Playback = client.Playback();
+      channel.answer();
 
       channel.on('ChannelDtmfReceived', event =>
         InboundNumberService.handleInternalNumberDtmf(internalNumber, {
