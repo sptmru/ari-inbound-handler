@@ -6,6 +6,8 @@ import { dataSource } from './data-source';
 import { InboundNumberService } from './services/InboundNumberService';
 import { config } from './config/config';
 
+// FIXME: test
+
 const ariUsername = config.ari.username;
 const ariPassword = config.ari.password;
 const ariUrl = config.ari.url;
