@@ -9,4 +9,5 @@ export type AriData = {
   trunkName: string;
   callerId: string;
   liveRecording?: LiveRecording;
+  inboundDID?: string;
 };
