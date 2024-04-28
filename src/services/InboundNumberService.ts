@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Channel, Bridge } from 'ari-client';
+import { Channel, Bridge, LiveRecording } from 'ari-client';
 
 import { dataSource } from '../data-source';
 import { InboundNumber } from '../entities/InboundNumber';
@@ -9,6 +9,7 @@ import { logger } from '../misc/Logger';
 import { AriData } from '../types/AriData';
 import { WithRequired } from '../types/WithRequired';
 import { FollowMeService } from './FollowMeService';
+import { CallRecordingService } from './CallRecordingService';
 
 export class InboundNumberService {
   static async getInboundNumbers(): Promise<InboundNumber[]> {
@@ -77,12 +78,20 @@ export class InboundNumberService {
   static async bridgeIncomingCallWithInternalNumber(internalNumber: string, ariData: AriData): Promise<boolean> {
     const { client, channel: incomingChannel, appName } = ariData;
     const internalChannel = client.Channel();
+    let liveRecording: LiveRecording | undefined = undefined;
 
-    incomingChannel.once('StasisEnd', () => {
+    incomingChannel.once('StasisEnd', async () => {
       logger.debug(`Incoming channel ${incomingChannel.id} got StasisEnd`);
 
+      if (liveRecording) {
+        logger.debug(`Stopping call recording on channel ${incomingChannel.id}`);
+        await liveRecording.stop();
+      } else {
+        logger.debug(`No live recording to stop on channel ${incomingChannel.id}`);
+      }
+
       logger.debug(`Hanging up internal channel ${internalChannel.id}`);
-      this.hangupChannel(internalChannel);
+      await this.hangupChannel(internalChannel);
     });
 
     internalChannel.once('ChannelDestroyed', () => {
@@ -104,7 +113,9 @@ export class InboundNumberService {
         this.destroyBridge(bridge);
       });
 
-      internalChannel.answer(() => {
+      internalChannel.answer(async () => {
+        logger.debug(`Internal channel ${internalChannel.id} answered`);
+        liveRecording = await CallRecordingService.createRecordingChannel(ariData);
         bridge.create({ type: 'mixing' }, () => {
           logger.debug(`Bridge ${bridge.id} created`);
           bridge.addChannel({ channel: [incomingChannel.id, internalChannel.id] });
@@ -128,7 +139,7 @@ export class InboundNumberService {
       logger.debug(`Trying to get FollowMe data for ${internalNumber}`);
       const followMeData = await FollowMeService.getFollowMeData(internalNumber);
       if (followMeData) {
-        await this.bridgeIncomingCallWithExternalNumber(followMeData.followme_number, ariData);
+        await this.bridgeIncomingCallWithExternalNumber(followMeData.followme_number, { ...ariData, liveRecording });
       } else {
         await this.hangupChannel(incomingChannel);
       }
@@ -140,11 +151,18 @@ export class InboundNumberService {
     const { client, channel: incomingChannel, appName, trunkName, callerId } = ariData;
     const externalChannel = client.Channel();
 
-    incomingChannel.once('StasisEnd', () => {
+    incomingChannel.once('StasisEnd', async () => {
       logger.debug(`Incoming channel ${incomingChannel.id} got StasisEnd`);
 
+      if (ariData?.liveRecording) {
+        logger.debug(`Stopping call recording on channel ${incomingChannel.id}`);
+        await ariData.liveRecording.stop();
+      } else {
+        logger.debug(`No live recording to stop on channel ${incomingChannel.id}`);
+      }
+
       logger.debug(`Hanging up external channel ${externalChannel.id}`);
-      this.hangupChannel(externalChannel);
+      await this.hangupChannel(externalChannel);
     });
 
     externalChannel.once('ChannelDestroyed', () => {
