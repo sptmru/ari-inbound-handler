@@ -3,7 +3,7 @@ import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from 'typeor
 @Entity('call_recordings')
 export class CallRecording {
   @PrimaryGeneratedColumn()
-  id: number;
+  id?: number;
 
   @Column('int', { default: 0, nullable: false })
   court_id: number;
@@ -18,7 +18,7 @@ export class CallRecording {
   rdnis: string;
 
   @CreateDateColumn({ type: 'timestamp' })
-  created_at: Date;
+  created_at?: Date;
 
   @Column('int', { default: 0, nullable: false })
   duration: number;
