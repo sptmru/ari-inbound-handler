@@ -10,6 +10,8 @@ const ariUsername = config.ari.username;
 const ariPassword = config.ari.password;
 const ariUrl = config.ari.url;
 
+console.log('testtesttest'); // FIXME: test git
+
 (async () => {
   try {
     await dataSource.initialize();
