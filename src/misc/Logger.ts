@@ -11,7 +11,12 @@ const logger = winston.createLogger({
   level: config.log.level,
   format: timestampFormat,
   defaultMeta: {},
-  transports: [new winston.transports.Console()]
+  transports: config.log.logToFile
+    ? [
+        new winston.transports.Console(),
+        new winston.transports.File({ filename: `${config.log.directory}/${config.log.file}` })
+      ]
+    : [new winston.transports.Console()]
 });
 
 export { logger };

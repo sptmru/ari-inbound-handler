@@ -4,7 +4,10 @@ const parsedConfig = dotenv.config().parsed;
 
 export const config = {
   log: {
-    level: parsedConfig?.LOG_LEVEL != null ? parsedConfig.LOG_LEVEL : 'debug'
+    level: parsedConfig?.LOG_LEVEL != null ? parsedConfig.LOG_LEVEL : 'debug',
+    directory: parsedConfig?.LOG_DIRECTORY != null ? parsedConfig.LOG_DIRECTORY : './logs',
+    file: parsedConfig?.LOG_LEVEL != null ? parsedConfig.LOG_LEVEL : 'debug.log',
+    logToFile: parsedConfig?.LOG_TO_FILE != null ? parsedConfig.LOG_TO_FILE.toLowerCase() === 'true' : false
   },
   db: {
     host: parsedConfig?.DB_HOST != null ? parsedConfig.DB_HOST : 'localhost',
@@ -42,6 +45,10 @@ export const config = {
   voicemail: {
     context: parsedConfig?.VOICEMAIL_CONTEXT != null ? parsedConfig.VOICEMAIL_CONTEXT : 'to-voicemail',
     directory: parsedConfig?.VOICEMAIL_DIRECTORY != null ? parsedConfig.VOICEMAIL_DIRECTORY : '/opt/voicemail'
+  },
+  callRecording: {
+    directory:
+      parsedConfig?.CALL_RECORDING_DIRECTORY != null ? parsedConfig.CALL_RECORDING_DIRECTORY : '/opt/recordings'
   },
   trunkName: parsedConfig?.TRUNK_NAME != null ? parsedConfig.TRUNK_NAME : 'twilio-na-us',
   greetingSound: parsedConfig?.GREETING_SOUND != null ? parsedConfig.GREETING_SOUND : 'speech_17087298587',
