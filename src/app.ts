@@ -10,8 +10,6 @@ const ariUsername = config.ari.username;
 const ariPassword = config.ari.password;
 const ariUrl = config.ari.url;
 
-// TODO: just a test
-
 (async () => {
   try {
     await dataSource.initialize();
