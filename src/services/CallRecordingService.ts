@@ -6,6 +6,7 @@ import { logger } from '../misc/Logger';
 import { config } from '../config/config';
 import { WavService } from './WavService';
 import { CallRecordingOptions } from '../types/CallRecordingOptions';
+import { InboundNumberService } from './InboundNumberService';
 
 export class CallRecordingService {
   static async recordingFinishedEventHandler(ariData: AriData, recordingOptions: CallRecordingOptions): Promise<void> {
@@ -23,14 +24,26 @@ export class CallRecordingService {
     const recordingFilePath = `${config.callRecording.baseDirectory}/${recording.name}.${recordingOptions.format}`;
     const duration = await WavService.getWavFileDuration(recordingFilePath);
 
-    await this.addCallRecordingToDb({
+    const recordingDataForDB = {
       callerid_name: channel.caller.name,
       callerid_num: channel.caller.number,
       duration,
       path_to_file: recordingFilePath,
       court_id: 0,
-      rdnis: ''
-    });
+      rdnis: ariData?.inboundDID != undefined ? ariData.inboundDID : ''
+    };
+
+    if (ariData?.inboundDID != undefined) {
+      const inboundNumber = await InboundNumberService.getInboundNumber(ariData.inboundDID);
+      if (inboundNumber) {
+        const courtIdNum = Number(inboundNumber.court_id);
+        if (!isNaN(courtIdNum)) {
+          recordingDataForDB.court_id = courtIdNum;
+        }
+      }
+    }
+
+    await this.addCallRecordingToDb(recordingDataForDB);
   }
 
   static async createRecordingChannel(ariData: AriData): Promise<LiveRecording> {
