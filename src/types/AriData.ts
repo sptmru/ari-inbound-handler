@@ -1,4 +1,4 @@
-import { Channel, Client, Playback, ChannelDtmfReceived } from 'ari-client';
+import { Channel, Client, Playback, ChannelDtmfReceived, LiveRecording } from 'ari-client';
 
 export type AriData = {
   dtmfReceiveEvent?: ChannelDtmfReceived;
@@ -8,4 +8,5 @@ export type AriData = {
   appName: string;
   trunkName: string;
   callerId: string;
+  liveRecording?: LiveRecording;
 };
