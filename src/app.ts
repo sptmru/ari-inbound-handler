@@ -1,9 +1,10 @@
 import * as ari from 'ari-client';
-import { Client, StasisStart, StasisEnd, Channel } from 'ari-client';
+import { Client, StasisStart, StasisEnd, Channel, LiveRecording } from 'ari-client';
 import { logger } from './misc/Logger';
 import { dataSource } from './data-source';
 import { InboundNumberService } from './services/InboundNumberService';
 import { config } from './config/config';
+import { CallRecordingService } from './services/CallRecordingService';
 
 const ariUsername = config.ari.username;
 const ariPassword = config.ari.password;
@@ -35,6 +36,12 @@ const RING_TIME = 15; // 3 rings, assuming 5 seconds per ring
       }
 
       if (inboundNumber.is_queue) {
+        let liveRecording: LiveRecording | undefined = undefined;
+        channel.on('StasisEnd', async (event: StasisEnd, channel: Channel): Promise<void> => {
+          await InboundNumberService.stopRecording(channel, liveRecording);
+          logger.debug(`${event.type} on ${channel.name}`);
+        });
+
         logger.debug(`Starting inbound number for ${inboundDID} and channel ${channel.name}`);
         const queueNumbers = InboundNumberService.getListOfQueuePhoneNumbers(inboundNumber);
         if (queueNumbers.length > 0) {
@@ -62,6 +69,14 @@ const RING_TIME = 15; // 3 rings, assuming 5 seconds per ring
                 outgoingChannel.on('StasisStart', async (event: StasisStart, channel: Channel) => {
                   if (!answeredChannel) {
                     answeredChannel = channel;
+                    liveRecording = await CallRecordingService.createRecordingChannel({
+                      channel,
+                      client,
+                      appName: config.ari.app,
+                      liveRecording,
+                      trunkName: config.trunkName,
+                      callerId: channel.caller.number
+                    });
                     await bridge.addChannel({ channel: [channel.id, event.channel.id] });
                     logger.debug(`Channel ${channel.id} added to bridge ${bridge.id}`);
 
