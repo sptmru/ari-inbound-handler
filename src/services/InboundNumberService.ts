@@ -28,6 +28,10 @@ export class InboundNumberService {
     return inboundNumber.vm_notification.split(',').map(email => email.trim());
   }
 
+  static getListOfQueuePhoneNumbers(inboundNumber: InboundNumber): string[] {
+    return inboundNumber.queue_numbers.split(',').map(phone => phone.trim());
+  }
+
   static async sendPushNotification(url: string, voicemail: Voicemail, inboundNumber: InboundNumber): Promise<void> {
     const payload = {
       voicemail_id: voicemail.id,
