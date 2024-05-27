@@ -22,4 +22,10 @@ export class InboundNumber {
 
   @Column('int', { default: 0, nullable: false })
   court_id: string;
+
+  @Column('bool', { default: false })
+  is_queue: boolean;
+
+  @Column('varchar', { length: 255, nullable: true })
+  queue_numbers: string;
 }
