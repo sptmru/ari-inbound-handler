@@ -39,13 +39,15 @@ export class InboundQueueService {
 
         logger.debug(`Destroying bridge ${bridge.id}`);
         InboundNumberService.destroyBridge(bridge);
+        InboundNumberService.hangupChannel(inboundChannel);
       });
 
       outboundChannel.answer(() => {
         success = true;
         logger.debug(`External queue channel ${outboundChannel.id} answered`);
-        bridge.create({ type: 'mixing' }, () => {
+        bridge.create({ type: 'mixing' }, async () => {
           logger.debug(`Bridge ${bridge.id} created`);
+          await inboundChannel.answer();
           bridge.addChannel({ channel: [inboundChannel.id, outboundChannel.id] });
           logger.debug(`Channels ${inboundChannel.id} and ${outboundChannel.id} were added to bridge ${bridge.id}`);
         });
