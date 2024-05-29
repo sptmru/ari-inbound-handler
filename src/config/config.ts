@@ -57,5 +57,8 @@ export const config = {
   greetingSound: parsedConfig?.GREETING_SOUND != null ? parsedConfig.GREETING_SOUND : 'speech_17087298587',
   callerId: parsedConfig?.CALLER_ID != null ? parsedConfig.CALLER_ID : '+17087298587',
   pushNotificationsUrl:
-    parsedConfig?.PUSH_NOTIFICATION_URL != null ? parsedConfig.PUSH_NOTIFICATION_URL : 'http://localhost'
+    parsedConfig?.PUSH_NOTIFICATION_URL != null ? parsedConfig.PUSH_NOTIFICATION_URL : 'http://localhost',
+  inboundQueue: {
+    ringTime: parsedConfig?.INBOUND_QUEUE_RING_TIME != null ? parseInt(parsedConfig.INBOUND_QUEUE_RING_TIME) : 15
+  }
 };
