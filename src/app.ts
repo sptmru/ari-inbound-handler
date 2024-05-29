@@ -50,62 +50,60 @@ const RING_TIME = 15; // 3 rings, assuming 5 seconds per ring
             bridge.create({ type: 'mixing' }).then(async bridge => {
               logger.debug(`Bridge ${bridge.id} created`);
 
-              const callPromises = queueNumbers.map(async number => {
-                const outgoing = client.Channel();
-                await outgoing.originate({
+              let answeredChannel: Channel | null = null;
+
+              for (const number of queueNumbers) {
+                const outboundChannel = client.Channel();
+                if (answeredChannel != null) {
+                  break;
+                }
+                await outboundChannel.originate({
                   endpoint: number.length > 4 ? `PJSIP/${number}@${config.trunkName}` : `PJSIP/${number}`,
                   app: config.ari.app,
                   appArgs: 'dialed',
                   timeout: RING_TIME,
                   callerId: inboundDID
                 });
-                return outgoing;
-              });
 
-              const outgoingChannels = await Promise.all(callPromises);
-              let answeredChannel: Channel | null = null;
+                outboundChannel.on('StasisStart', async () => {
+                  answeredChannel = outboundChannel;
+                  liveRecording = await CallRecordingService.createRecordingChannel({
+                    channel,
+                    client,
+                    appName: config.ari.app,
+                    liveRecording,
+                    trunkName: config.trunkName,
+                    callerId: channel.caller.number
+                  });
+                  await bridge.addChannel({ channel: [channel.id, event.channel.id] });
+                  logger.debug(`Channel ${channel.id} added to bridge ${bridge.id}`);
+                });
 
-              for (const outgoingChannel of outgoingChannels) {
-                outgoingChannel.on('StasisStart', async (event: StasisStart, channel: Channel) => {
-                  if (!answeredChannel) {
-                    answeredChannel = channel;
-                    liveRecording = await CallRecordingService.createRecordingChannel({
-                      channel,
-                      client,
-                      appName: config.ari.app,
-                      liveRecording,
-                      trunkName: config.trunkName,
-                      callerId: channel.caller.number
-                    });
-                    await bridge.addChannel({ channel: [channel.id, event.channel.id] });
-                    logger.debug(`Channel ${channel.id} added to bridge ${bridge.id}`);
-
-                    // Hang up all other channels
-                    for (const otherChannel of outgoingChannels) {
-                      if (otherChannel.id !== channel.id) {
-                        await otherChannel.hangup();
-                        logger.debug(`Channel ${otherChannel.id} hung up because another channel already answered`);
-                      }
-                    }
-                  } else {
-                    await channel.hangup();
-                    logger.debug(`Channel ${channel.id} hung up because another channel already answered`);
+                outboundChannel.on('StasisEnd', async () => {
+                  if (outboundChannel.state !== 'Up') {
+                    await outboundChannel.hangup();
                   }
+                });
+
+                await new Promise(resolve => {
+                  outboundChannel.on('ChannelStateChange', stateChangeEvent => {
+                    if (stateChangeEvent.channel.state === 'Up') {
+                      resolve(null);
+                    }
+                  });
                 });
               }
 
-              setTimeout(async () => {
-                if (!answeredChannel) {
-                  logger.debug(`No one answered within ${RING_TIME} seconds, redirecting to voicemail`);
-                  await channel.answer();
-                  await channel.setChannelVar({ variable: 'MESSAGE', value: inboundNumber.message });
-                  await channel.continueInDialplan({
-                    context: config.voicemail.context,
-                    extension: inboundNumber.voicemail,
-                    priority: 1
-                  });
-                }
-              }, RING_TIME * 1000);
+              if (answeredChannel == null) {
+                logger.debug(`No one answered within ${RING_TIME} seconds, redirecting to voicemail`);
+                await channel.answer();
+                await channel.setChannelVar({ variable: 'MESSAGE', value: inboundNumber.message });
+                await channel.continueInDialplan({
+                  context: config.voicemail.context,
+                  extension: inboundNumber.voicemail,
+                  priority: 1
+                });
+              }
             });
           } catch (err) {
             logger.error(`Error processing queue for ${inboundDID}`, err);
