@@ -53,7 +53,7 @@ const RING_TIME = 15; // 3 rings, assuming 5 seconds per ring
               const callPromises = queueNumbers.map(async number => {
                 const outgoing = client.Channel();
                 await outgoing.originate({
-                  endpoint: `PJSIP/${number}@${config.trunkName}`,
+                  endpoint: number.length > 4 ? `PJSIP/${number}@${config.trunkName}` : `PJSIP/${number}`,
                   app: config.ari.app,
                   appArgs: 'dialed',
                   timeout: RING_TIME,
