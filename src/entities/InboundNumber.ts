@@ -1,5 +1,10 @@
 import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 
+enum promptCitationId {
+  YES = 'Y',
+  NO = 'N'
+}
+
 @Entity('inbound_number')
 export class InboundNumber {
   @PrimaryGeneratedColumn()
@@ -28,4 +33,7 @@ export class InboundNumber {
 
   @Column('varchar', { length: 255, nullable: true })
   queue_numbers: string;
+
+  @Column({ type: 'enum', enum: promptCitationId, default: promptCitationId.NO })
+  prompt_citation_id: string;
 }
