@@ -1,9 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
-
-enum promptCitationId {
-  YES = 'Y',
-  NO = 'N'
-}
+import { promptCitationId } from '../types/PromptCitationIdEnum';
 
 @Entity('inbound_number')
 export class InboundNumber {
