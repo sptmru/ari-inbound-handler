@@ -4,8 +4,8 @@ import { logger } from './misc/Logger';
 import { dataSource } from './data-source';
 import { InboundNumberService } from './services/InboundNumberService';
 import { config } from './config/config';
-import { CallRecordingService } from './services/CallRecordingService';
 import { InboundQueueService } from './services/InboundQueueService';
+import { promptCitationId } from './types/PromptCitationIdEnum';
 
 const ariUsername = config.ari.username;
 const ariPassword = config.ari.password;
@@ -38,42 +38,17 @@ const ariUrl = config.ari.url;
         return;
       }
 
+      if (inboundNumber.prompt_citation_id === promptCitationId.YES) {
+        logger.debug(`Starting prompt citation IVR`);
+      }
       if (inboundNumber.is_queue) {
-        const ariData = {
+        await InboundQueueService.inboundQueueHandler(inboundNumber, inboundDID, {
           client,
           channel,
           appName: config.ari.app,
           trunkName: config.trunkName,
           callerId: inboundDID
-        };
-        const liveRecording = await CallRecordingService.createRecordingChannel(ariData);
-
-        channel.on('StasisEnd', async (event: StasisEnd, channel: Channel): Promise<void> => {
-          await InboundNumberService.stopRecording(channel, liveRecording);
-          logger.debug(`${event.type} on ${channel.name}`);
         });
-
-        logger.debug(`Starting inbound queue for ${inboundDID} and channel ${channel.name}`);
-        const queueNumbers = InboundQueueService.getListOfQueuePhoneNumbers(inboundNumber);
-        const success = await InboundQueueService.callQueueMembers(queueNumbers, ariData);
-
-        if (!success) {
-          try {
-            logger.debug(`Redirecting channel ${channel.name} to voicemail ${inboundNumber.voicemail}`);
-            await channel.answer();
-            await channel.setChannelVar({ variable: 'MESSAGE', value: inboundNumber.message });
-            await channel.continueInDialplan({
-              context: config.voicemail.context,
-              extension: inboundNumber.voicemail,
-              priority: 1
-            });
-          } catch (err) {
-            logger.error(
-              `Error while redirecting channel ${channel.name} to voicemail ${inboundNumber.voicemail}`,
-              err
-            );
-          }
-        }
       } else {
         try {
           logger.debug(`Redirecting channel ${channel.name} to voicemail ${inboundNumber.voicemail}`);

@@ -1,7 +1,9 @@
+import { Channel, StasisEnd } from 'ari-client';
 import { config } from '../config/config';
 import { InboundNumber } from '../entities/InboundNumber';
 import { logger } from '../misc/Logger';
 import { AriData } from '../types/AriData';
+import { CallRecordingService } from './CallRecordingService';
 import { InboundNumberService } from './InboundNumberService';
 
 export class InboundQueueService {
@@ -80,5 +82,37 @@ export class InboundQueueService {
     }
 
     return success;
+  }
+
+  static async inboundQueueHandler(inboundNumber: InboundNumber, inboundDID: string, ariData: AriData): Promise<void> {
+    const { channel: inboundChannel } = ariData;
+    const liveRecording = await CallRecordingService.createRecordingChannel(ariData);
+
+    inboundChannel.on('StasisEnd', async (event: StasisEnd, channel: Channel): Promise<void> => {
+      await InboundNumberService.stopRecording(channel, liveRecording);
+      logger.debug(`${event.type} on ${channel.name}`);
+    });
+
+    logger.debug(`Starting inbound queue for ${inboundDID} and channel ${inboundChannel.name}`);
+    const queueNumbers = InboundQueueService.getListOfQueuePhoneNumbers(inboundNumber);
+    const success = await InboundQueueService.callQueueMembers(queueNumbers, ariData);
+
+    if (!success) {
+      try {
+        logger.debug(`Redirecting channel ${inboundChannel.name} to voicemail ${inboundNumber.voicemail}`);
+        await inboundChannel.answer();
+        await inboundChannel.setChannelVar({ variable: 'MESSAGE', value: inboundNumber.message });
+        await inboundChannel.continueInDialplan({
+          context: config.voicemail.context,
+          extension: inboundNumber.voicemail,
+          priority: 1
+        });
+      } catch (err) {
+        logger.error(
+          `Error while redirecting channel ${inboundChannel.name} to voicemail ${inboundNumber.voicemail}`,
+          err
+        );
+      }
+    }
   }
 }
