@@ -16,7 +16,7 @@ export class InboundQueueService {
   static async callQueueMember(
     phoneNumber: string,
     ariData: AriData,
-    isProperCitationQueue: boolean = false,
+    isPromptCitationQueue: boolean = false,
     promptCitationData?: PromptCitationData
   ): Promise<boolean> {
     const { client, channel: inboundChannel } = ariData;
@@ -53,7 +53,7 @@ export class InboundQueueService {
 
       outboundChannel.answer(() => {
         success = true;
-        if (isProperCitationQueue && promptCitationData) {
+        if (isPromptCitationQueue && promptCitationData) {
           promptCitationData.extension = outboundChannel.dialplan.exten;
           void CitationApiService.sendNotificationRequest(promptCitationData);
         }
@@ -78,7 +78,7 @@ export class InboundQueueService {
   static async callQueueMembers(
     queueNumbers: string[],
     ariData: AriData,
-    isProperCitationQueue: boolean = false,
+    isPromptCitationQueue: boolean = false,
     promptCitationData?: PromptCitationData
   ): Promise<boolean> {
     if (queueNumbers.length === 0) {
@@ -90,7 +90,7 @@ export class InboundQueueService {
 
     let success = false;
     for (const number of queueNumbers) {
-      success = await this.callQueueMember(number, ariData, isProperCitationQueue, promptCitationData);
+      success = await this.callQueueMember(number, ariData, isPromptCitationQueue, promptCitationData);
 
       if (success) {
         break;

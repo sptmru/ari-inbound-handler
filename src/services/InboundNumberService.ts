@@ -392,7 +392,7 @@ export class InboundNumberService {
     try {
       await inboundChannel.play({ media: `sound:${config.promptCitation.greetingSound}` }, playback);
     } catch (err) {
-      logger.error(`Failed to play proper citation sound on channel ${inboundChannel.id}: ${err}`);
+      logger.error(`Failed to play prompt citation sound on channel ${inboundChannel.id}: ${err}`);
     }
   }
 }
