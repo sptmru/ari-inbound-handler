@@ -40,7 +40,9 @@ export class InboundQueueService {
     }
 
     outboundChannel.on('StasisStart', async () => {
-      logger.debug(`External queue channel ${outboundChannel.id} got StasisStart`);
+      logger.debug(`External queue channel ${outboundChannel.id} answered`);
+      success = true;
+
       const bridge = client.Bridge();
 
       outboundChannel.once('StasisEnd', () => {
@@ -51,19 +53,16 @@ export class InboundQueueService {
         InboundNumberService.hangupChannel(inboundChannel);
       });
 
-      outboundChannel.answer(() => {
-        success = true;
-        if (isPromptCitationQueue && promptCitationData) {
-          promptCitationData.extension = outboundChannel.dialplan.exten;
-          void CitationApiService.sendNotificationRequest(promptCitationData);
-        }
-        logger.debug(`External queue channel ${outboundChannel.id} answered`);
-        bridge.create({ type: 'mixing' }, async () => {
-          logger.debug(`Bridge ${bridge.id} created`);
-          await inboundChannel.answer();
-          bridge.addChannel({ channel: [inboundChannel.id, outboundChannel.id] });
-          logger.debug(`Channels ${inboundChannel.id} and ${outboundChannel.id} were added to bridge ${bridge.id}`);
-        });
+      if (isPromptCitationQueue && promptCitationData) {
+        promptCitationData.extension = phoneNumber;
+        void CitationApiService.sendNotificationRequest(promptCitationData);
+      }
+
+      bridge.create({ type: 'mixing' }, () => {
+        logger.debug(`Bridge ${bridge.id} created`);
+        // await inboundChannel.answer();
+        bridge.addChannel({ channel: [inboundChannel.id, outboundChannel.id] });
+        logger.debug(`Channels ${inboundChannel.id} and ${outboundChannel.id} were added to bridge ${bridge.id}`);
       });
     });
 
@@ -153,7 +152,11 @@ export class InboundQueueService {
 
     inboundChannel.on('ChannelDtmfReceived', async (event: ChannelDtmfReceived, channel: Channel): Promise<void> => {
       if (event.digit === '1 ') {
-        await playback.stop();
+        try {
+          void playback.stop();
+        } catch (err) {
+          logger.debug(`Stopping playback failed on ${inboundChannel.id}: there is no playback to stop`);
+        }
         await InboundNumberService.stopRecording(channel, liveRecording);
         logger.info(`Channel ${inboundChannel.id} pressed 1 to request a callback, processing`);
 

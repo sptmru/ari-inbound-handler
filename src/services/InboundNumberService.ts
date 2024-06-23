@@ -351,7 +351,11 @@ export class InboundNumberService {
     let citationNumber = '';
 
     inboundChannel.once('ChannelDtmfReceived', async event => {
-      await playback.stop();
+      try {
+        void playback.stop();
+      } catch (err) {
+        logger.debug(`Stopping playback failed on ${inboundChannel.id}: there is no playback to stop`);
+      }
       if (event.digit === '0' && citationNumber.length === 0) {
         inboundChannel.removeAllListeners('ChannelDtmfReceived');
         logger.debug(`Channel ${inboundChannel.id} pressed 0, starting queue processing`);
