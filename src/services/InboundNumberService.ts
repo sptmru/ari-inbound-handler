@@ -309,35 +309,6 @@ export class InboundNumberService {
     }
   }
 
-  static async handlePromptCitationQueue(inboundNumber: InboundNumber, ariData: AriData): Promise<void> {
-    const { client, channel: inboundChannel } = ariData;
-    if (inboundNumber.is_queue) {
-      await InboundQueueService.inboundQueueHandler(inboundNumber, inboundChannel.dialplan.exten, {
-        client,
-        channel: inboundChannel,
-        appName: config.ari.app,
-        trunkName: config.trunkName,
-        callerId: inboundChannel.dialplan.exten
-      });
-    } else {
-      try {
-        logger.debug(`Redirecting channel ${inboundChannel.name} to voicemail ${inboundNumber.voicemail}`);
-        await inboundChannel.answer();
-        await inboundChannel.setChannelVar({ variable: 'MESSAGE', value: inboundNumber.message });
-        await inboundChannel.continueInDialplan({
-          context: config.voicemail.context,
-          extension: inboundNumber.voicemail,
-          priority: 1
-        });
-      } catch (err) {
-        logger.error(
-          `Error while redirecting channel ${inboundChannel.name} to voicemail ${inboundNumber.voicemail}`,
-          err
-        );
-      }
-    }
-  }
-
   static async handlePromptCitationIvr(
     inboundNumber: InboundNumber,
     inboundDID: string,
@@ -383,7 +354,6 @@ export class InboundNumberService {
             extension: inboundDID
           };
 
-          await inboundChannel.play({ media: 'sound:prompt_citation_end' }, playback);
           return InboundQueueService.promptCitationQueueHandler(inboundNumber, promptCitationData, ariData);
         }
 
@@ -392,11 +362,5 @@ export class InboundNumberService {
         await inboundChannel.play({ media: 'sound:invalid_option' }, playback);
       }
     });
-
-    try {
-      await inboundChannel.play({ media: `sound:${config.promptCitation.greetingSound}` }, playback);
-    } catch (err) {
-      logger.error(`Failed to play prompt citation sound on channel ${inboundChannel.id}: ${err}`);
-    }
   }
 }
