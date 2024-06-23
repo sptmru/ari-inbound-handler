@@ -1,17 +1,24 @@
-import { Channel, StasisEnd } from 'ari-client';
+import { Channel, ChannelDtmfReceived, StasisEnd } from 'ari-client';
 import { config } from '../config/config';
 import { InboundNumber } from '../entities/InboundNumber';
 import { logger } from '../misc/Logger';
 import { AriData } from '../types/AriData';
 import { CallRecordingService } from './CallRecordingService';
 import { InboundNumberService } from './InboundNumberService';
+import { PromptCitationData } from '../types/PromptCitationData';
+import { CitationApiService } from './CitationApiService';
 
 export class InboundQueueService {
   static getListOfQueuePhoneNumbers(inboundNumber: InboundNumber): string[] {
     return inboundNumber.queue_numbers.split(',').map(phone => phone.trim());
   }
 
-  static async callQueueMember(phoneNumber: string, ariData: AriData): Promise<boolean> {
+  static async callQueueMember(
+    phoneNumber: string,
+    ariData: AriData,
+    isProperCitationQueue: boolean = false,
+    promptCitationData?: PromptCitationData
+  ): Promise<boolean> {
     const { client, channel: inboundChannel } = ariData;
 
     let success = false;
@@ -46,6 +53,10 @@ export class InboundQueueService {
 
       outboundChannel.answer(() => {
         success = true;
+        if (isProperCitationQueue && promptCitationData) {
+          promptCitationData.extension = outboundChannel.dialplan.exten;
+          void CitationApiService.sendNotificationRequest(promptCitationData);
+        }
         logger.debug(`External queue channel ${outboundChannel.id} answered`);
         bridge.create({ type: 'mixing' }, async () => {
           logger.debug(`Bridge ${bridge.id} created`);
@@ -64,7 +75,12 @@ export class InboundQueueService {
     });
   }
 
-  static async callQueueMembers(queueNumbers: string[], ariData: AriData): Promise<boolean> {
+  static async callQueueMembers(
+    queueNumbers: string[],
+    ariData: AriData,
+    isProperCitationQueue: boolean = false,
+    promptCitationData?: PromptCitationData
+  ): Promise<boolean> {
     if (queueNumbers.length === 0) {
       logger.error(`No queue numbers found`);
       return false;
@@ -74,7 +90,7 @@ export class InboundQueueService {
 
     let success = false;
     for (const number of queueNumbers) {
-      success = await this.callQueueMember(number, ariData);
+      success = await this.callQueueMember(number, ariData, isProperCitationQueue, promptCitationData);
 
       if (success) {
         break;
@@ -84,7 +100,11 @@ export class InboundQueueService {
     return success;
   }
 
-  static async inboundQueueHandler(inboundNumber: InboundNumber, inboundDID: string, ariData: AriData): Promise<void> {
+  static async inboundQueueHandler(
+    inboundNumber: InboundNumber,
+    inboundDID: string,
+    ariData: AriData
+  ): Promise<string | void> {
     const { channel: inboundChannel } = ariData;
     const liveRecording = await CallRecordingService.createRecordingChannel(ariData);
 
@@ -96,6 +116,73 @@ export class InboundQueueService {
     logger.debug(`Starting inbound queue for ${inboundDID} and channel ${inboundChannel.name}`);
     const queueNumbers = InboundQueueService.getListOfQueuePhoneNumbers(inboundNumber);
     const success = await InboundQueueService.callQueueMembers(queueNumbers, ariData);
+
+    if (!success) {
+      try {
+        logger.debug(`Redirecting channel ${inboundChannel.name} to voicemail ${inboundNumber.voicemail}`);
+        await inboundChannel.answer();
+        await inboundChannel.setChannelVar({ variable: 'MESSAGE', value: inboundNumber.message });
+        await inboundChannel.continueInDialplan({
+          context: config.voicemail.context,
+          extension: inboundNumber.voicemail,
+          priority: 1
+        });
+      } catch (err) {
+        logger.error(
+          `Error while redirecting channel ${inboundChannel.name} to voicemail ${inboundNumber.voicemail}`,
+          err
+        );
+      }
+    }
+  }
+
+  static async promptCitationQueueHandler(
+    inboundNumber: InboundNumber,
+    promptCitationData: PromptCitationData,
+    ariData: AriData
+  ): Promise<void> {
+    const { channel: inboundChannel, client } = ariData;
+    const liveRecording = await CallRecordingService.createRecordingChannel(ariData);
+
+    const playback = client.Playback();
+
+    inboundChannel.on('StasisEnd', async (event: StasisEnd, channel: Channel): Promise<void> => {
+      await InboundNumberService.stopRecording(channel, liveRecording);
+      logger.debug(`${event.type} on ${channel.name}`);
+    });
+
+    inboundChannel.on('ChannelDtmfReceived', async (event: ChannelDtmfReceived, channel: Channel): Promise<void> => {
+      if (event.digit === '1 ') {
+        await playback.stop();
+        await InboundNumberService.stopRecording(channel, liveRecording);
+        logger.info(`Channel ${inboundChannel.id} pressed 1 to request a callback, processing`);
+
+        await inboundChannel.play(
+          {
+            media: [
+              `sound: ${config.promptCitation.queueCallbackConfirmationSoundOne}`,
+              `sound: ${config.promptCitation.queueCallbackConfirmationSoundTwo}`
+            ]
+          },
+          playback
+        );
+      }
+    });
+
+    const playCallbackInfoSoundInterval = setInterval(async () => {
+      await inboundChannel.play({ media: `sound: ${config.promptCitation.queueCallbackInfoSound}` }, playback);
+    }, config.promptCitation.queueCallbackInfoSoundInterval);
+
+    await inboundChannel.startMoh();
+
+    logger.debug(
+      `Starting inbound queue for ${promptCitationData.dialedPhoneNumber} and channel ${inboundChannel.name}`
+    );
+    const queueNumbers = InboundQueueService.getListOfQueuePhoneNumbers(inboundNumber);
+    const success = await InboundQueueService.callQueueMembers(queueNumbers, ariData, true, promptCitationData);
+
+    clearInterval(playCallbackInfoSoundInterval);
+    await inboundChannel.stopMoh();
 
     if (!success) {
       try {
