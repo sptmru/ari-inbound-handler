@@ -19,27 +19,27 @@ const ariUrl = config.ari.url;
   }
 
   const stasisHandler = async (client: Client): Promise<void> => {
-    client.on('StasisStart', async (event: StasisStart, channel: Channel): Promise<void> => {
-      channel.answer();
+    client.on('StasisStart', async (event: StasisStart, inboundChannel: Channel): Promise<void> => {
       const inboundDID = event.channel.dialplan.exten;
       if (inboundDID === 's') {
         return;
       }
+
       logger.debug(`Inbound call to ${inboundDID}`);
       const inboundNumber = await InboundNumberService.getInboundNumber(inboundDID);
       if (!inboundNumber) {
         logger.debug(`Number ${inboundDID} is not in the database`);
         try {
-          await channel.continueInDialplan();
-          logger.debug(`Channel ${channel.name} continued in dialplan`);
+          await inboundChannel.continueInDialplan();
+          logger.debug(`Channel ${inboundChannel.name} continued in dialplan`);
         } catch (err) {
-          logger.error(`Error continuing channel ${channel.name} in dialplan`, err);
+          logger.error(`Error continuing channel ${inboundChannel.name} in dialplan`, err);
         }
         return;
       }
 
       const ariData = {
-        channel,
+        channel: inboundChannel,
         client,
         appName: config.ari.app,
         trunkName: config.trunkName,
