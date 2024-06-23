@@ -1,5 +1,5 @@
 export type PromptCitationData = {
-  extension?: string;
+  extension: string;
   courtId: string;
   citationNumber: string;
   callerIdName: string;
