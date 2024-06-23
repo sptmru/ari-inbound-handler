@@ -31,7 +31,7 @@ export class InboundQueueService {
         endpoint: phoneNumber.length > 4 ? `PJSIP/${phoneNumber}@${config.trunkName}` : `PJSIP/${phoneNumber}`,
         app: config.ari.app,
         appArgs: 'dialed',
-        timeout: config.inboundQueue.ringTime,
+        timeout: isPromptCitationQueue ? 3600 : config.inboundQueue.ringTime,
         callerId: inboundChannel.caller.number
       });
     } catch (err) {
@@ -42,6 +42,8 @@ export class InboundQueueService {
     outboundChannel.on('StasisStart', async () => {
       logger.debug(`External queue channel ${outboundChannel.id} answered`);
       success = true;
+
+      await inboundChannel.stopMoh();
 
       const bridge = client.Bridge();
 
@@ -72,6 +74,48 @@ export class InboundQueueService {
         resolve(success);
       });
     });
+  }
+
+  static async callQueueMembersRingall(
+    queueNumbers: string[],
+    ariData: AriData,
+    isPromptCitationQueue: boolean = false,
+    promptCitationData?: PromptCitationData
+  ): Promise<boolean> {
+    if (queueNumbers.length === 0) {
+      logger.error(`No queue numbers found`);
+      return false;
+    }
+
+    logger.debug(`Calling queue members ${queueNumbers.join(', ')}`);
+
+    let success = false;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const ongoingCalls: any[] = [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let answeredChannel: any = null;
+
+    for (const number of queueNumbers) {
+      ongoingCalls.push(
+        this.callQueueMember(number, ariData, isPromptCitationQueue, promptCitationData).then(answered => {
+          if (answered && answeredChannel === null) {
+            answeredChannel = number;
+            success = true;
+            // Drop other calls
+            ongoingCalls.forEach(call => {
+              if (call.phoneNumber !== number) {
+                call.outboundChannel.hangup();
+              }
+            });
+          }
+        })
+      );
+    }
+
+    // Wait for all calls to finish
+    await Promise.all(ongoingCalls);
+
+    return success;
   }
 
   static async callQueueMembers(
@@ -163,8 +207,8 @@ export class InboundQueueService {
         await inboundChannel.play(
           {
             media: [
-              `sound: ${config.promptCitation.queueCallbackConfirmationSoundOne}`,
-              `sound: ${config.promptCitation.queueCallbackConfirmationSoundTwo}`
+              `sound:${config.promptCitation.queueCallbackConfirmationSoundOne}`,
+              `sound:${config.promptCitation.queueCallbackConfirmationSoundTwo}`
             ]
           },
           playback
@@ -172,11 +216,18 @@ export class InboundQueueService {
       }
     });
 
-    const playCallbackInfoSoundInterval = setInterval(async () => {
-      await inboundChannel.play({ media: `sound: ${config.promptCitation.queueCallbackInfoSound}` }, playback);
-    }, config.promptCitation.queueCallbackInfoSoundInterval);
-
+    await inboundChannel.play({ media: `sound:${config.promptCitation.queueCallbackInfoSound}` }, playback);
     await inboundChannel.startMoh();
+
+    const playCallbackInfoSoundInterval = setInterval(async () => {
+      try {
+        await inboundChannel.stopMoh();
+        await inboundChannel.play({ media: `sound:${config.promptCitation.queueCallbackInfoSound}` }, playback);
+        await inboundChannel.startMoh();
+      } catch (err) {
+        logger.debug(`Failed to process callback info audio interval on channel ${inboundChannel.id}`);
+      }
+    }, config.promptCitation.queueCallbackInfoSoundInterval);
 
     logger.debug(
       `Starting inbound queue for ${promptCitationData.dialedPhoneNumber} and channel ${inboundChannel.name}`
@@ -185,14 +236,17 @@ export class InboundQueueService {
     const success = await InboundQueueService.callQueueMembers(queueNumbers, ariData, true, promptCitationData);
 
     clearInterval(playCallbackInfoSoundInterval);
-    await inboundChannel.stopMoh();
+    try {
+      void inboundChannel.stopMoh();
+    } catch (err) {
+      logger.debug(`Stopping MOH failed on ${inboundChannel.id}: there is no channel`);
+    }
 
     if (!success) {
       try {
         logger.debug(`Redirecting channel ${inboundChannel.name} to voicemail ${inboundNumber.voicemail}`);
-        await inboundChannel.answer();
-        await inboundChannel.setChannelVar({ variable: 'MESSAGE', value: inboundNumber.message });
-        await inboundChannel.continueInDialplan({
+        void inboundChannel.setChannelVar({ variable: 'MESSAGE', value: inboundNumber.message });
+        void inboundChannel.continueInDialplan({
           context: config.voicemail.context,
           extension: inboundNumber.voicemail,
           priority: 1
