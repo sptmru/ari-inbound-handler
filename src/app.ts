@@ -20,6 +20,7 @@ const ariUrl = config.ari.url;
 
   const stasisHandler = async (client: Client): Promise<void> => {
     client.on('StasisStart', async (event: StasisStart, channel: Channel): Promise<void> => {
+      channel.answer();
       const inboundDID = event.channel.dialplan.exten;
       if (inboundDID === 's') {
         return;
