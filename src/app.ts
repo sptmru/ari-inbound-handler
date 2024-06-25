@@ -10,6 +10,10 @@ const ariUsername = config.ari.username;
 const ariPassword = config.ari.password;
 const ariUrl = config.ari.url;
 
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
 (async () => {
   try {
     await dataSource.initialize();
@@ -43,12 +47,13 @@ const ariUrl = config.ari.url;
         client,
         appName: config.ari.app,
         trunkName: config.trunkName,
-        callerId: inboundDID
+        callerId: inboundDID,
+        inboundDID
       };
 
       if (inboundNumber.prompt_citation_id === promptCitationId.YES) {
         logger.debug(`Starting prompt citation IVR`);
-        await InboundNumberService.handlePromptCitationIvr(inboundNumber, inboundDID, ariData);
+        await InboundNumberService.handlePromptCitationIvr(inboundNumber, ariData);
       } else {
         void InboundNumberService.handleInboundQueue(inboundNumber, inboundDID, ariData);
       }
@@ -68,4 +73,8 @@ const ariUrl = config.ari.url;
       logger.error(`Error connecting to ARI: ${err}`);
       process.exit(1);
     });
+
+  process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  });
 })();
