@@ -21,7 +21,7 @@ export class CitationApiService {
     formData.append('dialed_phone_number', promptCitationData.dialedPhoneNumber);
 
     try {
-      const response = await axios.post(`${this.baseUrl}/api/v1/citation`, formData, {
+      const response = await axios.post(`${this.baseUrl}/crm/callqueue/notify`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       logger.info(`Citation API request successful: ${response.status}`);
