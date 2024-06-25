@@ -7,10 +7,10 @@
       "name": "Debug app",
       "sourceMaps": true,
       "smartStep": true,
-      "runtimeExecutable": "npm",
+      "runtimeExecutable": "nodemon",
       "runtimeArgs": [
-        "run-script",
-        "start"
+        "--config",
+        "nodemon.json"
       ],
       "cwd": "${workspaceFolder}",
       "skipFiles": [
@@ -18,7 +18,10 @@
       ],
       "restart": true,
       "console": "integratedTerminal",
-      "internalConsoleOptions": "neverOpen"
+      "internalConsoleOptions": "neverOpen",
+      "outFiles": [
+        "${workspaceFolder}/build/**/*.js"
+      ],
     },
     {
       "type": "node",
@@ -26,10 +29,11 @@
       "name": "Debug inbound route scenario",
       "sourceMaps": true,
       "smartStep": true,
-      "runtimeExecutable": "npm",
+      "trace": true,
+      "runtimeExecutable": "nodemon",
       "runtimeArgs": [
-        "run-script",
-        "start:inbound_route_17087298587"
+        "--config",
+        "nodemon.json"
       ],
       "cwd": "${workspaceFolder}",
       "skipFiles": [
@@ -37,7 +41,10 @@
       ],
       "restart": true,
       "console": "integratedTerminal",
-      "internalConsoleOptions": "neverOpen"
+      "internalConsoleOptions": "neverOpen",
+      "outFiles": [
+        "${workspaceFolder}/build/**/*.js"
+      ],
     }
   ]
 }

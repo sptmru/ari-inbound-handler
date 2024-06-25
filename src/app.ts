@@ -4,12 +4,15 @@ import { logger } from './misc/Logger';
 import { dataSource } from './data-source';
 import { InboundNumberService } from './services/InboundNumberService';
 import { config } from './config/config';
-import { InboundQueueService } from './services/InboundQueueService';
 import { promptCitationId } from './types/PromptCitationIdEnum';
 
 const ariUsername = config.ari.username;
 const ariPassword = config.ari.password;
 const ariUrl = config.ari.url;
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
 
 (async () => {
   try {
@@ -20,48 +23,39 @@ const ariUrl = config.ari.url;
   }
 
   const stasisHandler = async (client: Client): Promise<void> => {
-    client.on('StasisStart', async (event: StasisStart, channel: Channel): Promise<void> => {
+    client.on('StasisStart', async (event: StasisStart, inboundChannel: Channel): Promise<void> => {
       const inboundDID = event.channel.dialplan.exten;
       if (inboundDID === 's') {
         return;
       }
+
       logger.debug(`Inbound call to ${inboundDID}`);
       const inboundNumber = await InboundNumberService.getInboundNumber(inboundDID);
       if (!inboundNumber) {
         logger.debug(`Number ${inboundDID} is not in the database`);
         try {
-          await channel.continueInDialplan();
-          logger.debug(`Channel ${channel.name} continued in dialplan`);
+          await inboundChannel.continueInDialplan();
+          logger.debug(`Channel ${inboundChannel.name} continued in dialplan`);
         } catch (err) {
-          logger.error(`Error continuing channel ${channel.name} in dialplan`, err);
+          logger.error(`Error continuing channel ${inboundChannel.name} in dialplan`, err);
         }
         return;
       }
 
+      const ariData = {
+        channel: inboundChannel,
+        client,
+        appName: config.ari.app,
+        trunkName: config.trunkName,
+        callerId: inboundDID,
+        inboundDID
+      };
+
       if (inboundNumber.prompt_citation_id === promptCitationId.YES) {
         logger.debug(`Starting prompt citation IVR`);
-      }
-      if (inboundNumber.is_queue) {
-        await InboundQueueService.inboundQueueHandler(inboundNumber, inboundDID, {
-          client,
-          channel,
-          appName: config.ari.app,
-          trunkName: config.trunkName,
-          callerId: inboundDID
-        });
+        await InboundNumberService.handlePromptCitationIvr(inboundNumber, ariData);
       } else {
-        try {
-          logger.debug(`Redirecting channel ${channel.name} to voicemail ${inboundNumber.voicemail}`);
-          await channel.answer();
-          await channel.setChannelVar({ variable: 'MESSAGE', value: inboundNumber.message });
-          await channel.continueInDialplan({
-            context: config.voicemail.context,
-            extension: inboundNumber.voicemail,
-            priority: 1
-          });
-        } catch (err) {
-          logger.error(`Error while redirecting channel ${channel.name} to voicemail ${inboundNumber.voicemail}`, err);
-        }
+        void InboundNumberService.handleInboundQueue(inboundNumber, inboundDID, ariData);
       }
     });
 
@@ -79,4 +73,8 @@ const ariUrl = config.ari.url;
       logger.error(`Error connecting to ARI: ${err}`);
       process.exit(1);
     });
+
+  process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  });
 })();

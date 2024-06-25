@@ -60,5 +60,31 @@ export const config = {
     parsedConfig?.PUSH_NOTIFICATION_URL != null ? parsedConfig.PUSH_NOTIFICATION_URL : 'http://localhost',
   inboundQueue: {
     ringTime: parsedConfig?.INBOUND_QUEUE_RING_TIME != null ? parseInt(parsedConfig.INBOUND_QUEUE_RING_TIME) : 15
+  },
+  promptCitation: {
+    greetingSound:
+      parsedConfig?.PROMPT_CITATION_IVR_GREETING_SOUND != null
+        ? parsedConfig.PROMPT_CITATION_IVR_GREETING_SOUND
+        : 'citation-greeting',
+    queueCallbackInfoSound:
+      parsedConfig?.PROMPT_CITATION_QUEUE_CALLBACK_INFO_SOUND != null
+        ? parsedConfig.PROMPT_CITATION_QUEUE_CALLBACK_INFO_SOUND
+        : 'citation-callback-info',
+    queueCallbackConfirmationSoundOne:
+      parsedConfig?.PROMPT_CITATION_QUEUE_CALLBACK_CONFIRMATION_SOUND_ONE != null
+        ? parsedConfig.PROMPT_CITATION_QUEUE_CALLBACK_CONFIRMATION_SOUND_ONE
+        : 'citation-callback-confirm-1',
+    queueCallbackConfirmationSoundTwo:
+      parsedConfig?.PROMPT_CITATION_QUEUE_CALLBACK_CONFIRMATION_SOUND_TWO != null
+        ? parsedConfig.PROMPT_CITATION_QUEUE_CALLBACK_CONFIRMATION_SOUND_TWO
+        : 'citation-callback-confirm-2',
+    queueCallbackInfoSoundInterval:
+      parsedConfig?.PROMPT_CITATION_QUEUE_CALLBACK_INFO_SOUND_INTERVAL_MS != null
+        ? Number(parsedConfig.PROMPT_CITATION_QUEUE_CALLBACK_INFO_SOUND_INTERVAL_MS)
+        : 60000,
+    apiBaseUrl:
+      parsedConfig?.PROMPT_CITATION_API_BASE_URL != null
+        ? parsedConfig.PROMPT_CITATION_API_BASE_URL
+        : 'http://promptcitationapi.ltd'
   }
 };

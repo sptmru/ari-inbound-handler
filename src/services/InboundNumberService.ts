@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Channel, Bridge, LiveRecording } from 'ari-client';
+import { Channel, Bridge, LiveRecording, ChannelDtmfReceived, Playback } from 'ari-client';
 
 import { dataSource } from '../data-source';
 import { InboundNumber } from '../entities/InboundNumber';
@@ -10,6 +10,9 @@ import { AriData } from '../types/AriData';
 import { WithRequired } from '../types/WithRequired';
 import { FollowMeService } from './FollowMeService';
 import { CallRecordingService } from './CallRecordingService';
+import { config } from '../config/config';
+import { InboundQueueService } from './InboundQueueService';
+import { PromptCitationData } from '../types/PromptCitationData';
 
 export class InboundNumberService {
   static async getInboundNumbers(): Promise<InboundNumber[]> {
@@ -208,6 +211,14 @@ export class InboundNumberService {
     }
   }
 
+  static async stopPlayback(playback: Playback): Promise<void> {
+    try {
+      await playback.stop();
+    } catch (err) {
+      logger.error(`No  playback anymore, nothing to stop`);
+    }
+  }
+
   static async stopRecording(channel: Channel, liveRecording: LiveRecording | undefined): Promise<void> {
     if (!liveRecording) {
       logger.debug(`No live recording found for channel ${channel.id}`);
@@ -228,5 +239,85 @@ export class InboundNumberService {
     } catch (err) {
       logger.debug(`Failed to destroy bridge ${bridge.id} — nothing to destroy`);
     }
+  }
+
+  static async handleInboundQueue(inboundNumber: InboundNumber, inboundDID: string, ariData: AriData): Promise<void> {
+    const { client, channel: inboundChannel } = ariData;
+    if (inboundNumber.is_queue) {
+      await InboundQueueService.inboundQueueHandler(inboundNumber, inboundDID, {
+        client,
+        channel: inboundChannel,
+        appName: config.ari.app,
+        trunkName: config.trunkName,
+        callerId: inboundDID
+      });
+    } else {
+      try {
+        logger.debug(`Redirecting channel ${inboundChannel.name} to voicemail ${inboundNumber.voicemail}`);
+        await inboundChannel.answer();
+        await inboundChannel.setChannelVar({ variable: 'MESSAGE', value: inboundNumber.message });
+        await inboundChannel.continueInDialplan({
+          context: config.voicemail.context,
+          extension: inboundNumber.voicemail,
+          priority: 1
+        });
+      } catch (err) {
+        logger.error(
+          `Error while redirecting channel ${inboundChannel.name} to voicemail ${inboundNumber.voicemail}`,
+          err
+        );
+      }
+    }
+  }
+
+  static async handlePromptCitationDTMFHandler(
+    inboundNumber: InboundNumber,
+    event: ChannelDtmfReceived,
+    ariData: AriData,
+    citationNumber: string = ''
+  ): Promise<void> {
+    const { channel: inboundChannel, playback, inboundDID } = ariData;
+    logger.debug(`Channel ${inboundChannel.id} pressed ${event.digit}`);
+    await this.stopPlayback(playback as Playback);
+
+    const promptCitationData: PromptCitationData = {
+      courtId: inboundNumber.court_id,
+      citationNumber: '0',
+      dialedPhoneNumber: inboundDID !== undefined ? inboundDID : '',
+      callerIdName: inboundChannel.caller.name,
+      callerIdNumber: inboundChannel.caller.number,
+      extension: ''
+    };
+
+    if (!(event.digit === '0' && citationNumber.length === 0) && event.digit !== '#') {
+      citationNumber += event.digit;
+    }
+
+    if (event.digit === '0' && citationNumber.length === 0) {
+      inboundChannel.removeAllListeners('ChannelDtmfReceived');
+      logger.debug(`Channel ${inboundChannel.id} pressed 0, starting queue processing`);
+      await InboundQueueService.promptCitationQueueHandler(inboundNumber, promptCitationData, ariData);
+    } else if (event.digit === '#') {
+      inboundChannel.removeAllListeners('ChannelDtmfReceived');
+      logger.debug(`Channel ${inboundChannel.id} pressed #, sending citation notification`);
+      promptCitationData.citationNumber = citationNumber;
+      await InboundQueueService.promptCitationQueueHandler(inboundNumber, promptCitationData, ariData);
+    }
+  }
+
+  static async handlePromptCitationIvr(inboundNumber: InboundNumber, ariData: AriData): Promise<void> {
+    const { client, channel: inboundChannel } = ariData;
+    const playback = client.Playback();
+
+    try {
+      await inboundChannel.answer();
+      await inboundChannel.play({ media: `sound:${config.promptCitation.greetingSound}` }, playback);
+    } catch (err) {
+      logger.error(`No inbound channel anymore, stop prompt citation IVR`);
+    }
+
+    inboundChannel.on('ChannelDtmfReceived', async event => {
+      await this.handlePromptCitationDTMFHandler(inboundNumber, event, { ...ariData, playback });
+    });
   }
 }
