@@ -4,7 +4,6 @@ import { logger } from './misc/Logger';
 import { dataSource } from './data-source';
 import { InboundNumberService } from './services/InboundNumberService';
 import { config } from './config/config';
-import { promptCitationId } from './types/PromptCitationIdEnum';
 
 const ariUsername = config.ari.username;
 const ariPassword = config.ari.password;
@@ -51,12 +50,14 @@ process.on('unhandledRejection', (reason, promise) => {
         inboundDID
       };
 
-      if (inboundNumber.prompt_citation_id === promptCitationId.YES) {
-        logger.debug(`Starting prompt citation IVR`);
-        await InboundNumberService.handlePromptCitationIvr(inboundNumber, ariData);
-      } else {
-        void InboundNumberService.handleInboundQueue(inboundNumber, inboundDID, ariData);
-      }
+      void InboundNumberService.handleInboundQueue(inboundNumber, inboundDID, ariData);
+
+      // if (inboundNumber.prompt_citation_id === promptCitationId.YES) {
+      //   logger.debug(`Starting prompt citation IVR`);
+      //   await InboundNumberService.handlePromptCitationIvr(inboundNumber, ariData);
+      // } else {
+      //   void InboundNumberService.handleInboundQueue(inboundNumber, inboundDID, ariData);
+      // }
     });
 
     client.on('StasisEnd', async (event: StasisEnd, channel: Channel): Promise<void> => {
