@@ -19,7 +19,7 @@ export class CallRecordingService {
     }
 
     const recording = await liveRecording.copyStored({
-      destinationRecordingName: `${config.callRecording.directory}/${recordingOptions.name}`
+      destinationRecordingName: `${config.callRecording.directory}/${recordingOptions.name}`,
     });
     const recordingFilePath = `${config.callRecording.baseDirectory}/${recording.name}.${recordingOptions.format}`;
     const duration = await WavService.getWavFileDuration(recordingFilePath);
@@ -30,7 +30,7 @@ export class CallRecordingService {
       duration,
       path_to_file: recordingFilePath,
       court_id: 0,
-      rdnis: ariData?.inboundDID != undefined ? ariData.inboundDID : ''
+      rdnis: ariData?.inboundDID != undefined ? ariData.inboundDID : '',
     };
 
     if (ariData?.inboundDID != undefined) {
@@ -56,13 +56,13 @@ export class CallRecordingService {
       format: 'wav',
       maxDurationSeconds: 0,
       maxSilenceSeconds: 0,
-      ifExists: 'overwrite'
+      ifExists: 'overwrite',
     };
     const snoopChannel = await client.channels.snoopChannelWithId({
       channelId: channel.id,
       snoopId: `${channel.id}-snoop`,
       app: appName,
-      spy: 'both'
+      spy: 'both',
     });
 
     const liveRecording = await snoopChannel.record(recordingOptions, client.LiveRecording());

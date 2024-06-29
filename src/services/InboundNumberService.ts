@@ -36,7 +36,7 @@ export class InboundNumberService {
       voicemail_id: voicemail.id,
       court_id: inboundNumber.court_id,
       not_listened_vm: await VoicemailService.countNotListenedForCourt(voicemail.origmailbox),
-      total_not_listened_vm: await VoicemailService.countNotListened()
+      total_not_listened_vm: await VoicemailService.countNotListened(),
     };
 
     const data = Object.keys(payload)
@@ -127,7 +127,7 @@ export class InboundNumberService {
         endpoint: `PJSIP/${internalNumber}`,
         app: appName,
         appArgs: 'dialed',
-        callerId: `MT <${incomingChannel.caller.number}>`
+        callerId: `MT <${incomingChannel.caller.number}>`,
       });
       logger.debug(`Calling PJSIP/${internalNumber} on channel ${internalChannel.id}`);
       return true;
@@ -191,7 +191,7 @@ export class InboundNumberService {
         endpoint: `PJSIP/${externalNumber}@${trunkName}`,
         app: appName,
         appArgs: 'dialed',
-        callerId
+        callerId,
       });
       logger.debug(`Calling PJSIP/${externalNumber} on channel ${externalChannel.id}`);
       return true;
@@ -249,7 +249,7 @@ export class InboundNumberService {
         channel: inboundChannel,
         appName: config.ari.app,
         trunkName: config.trunkName,
-        callerId: inboundDID
+        callerId: inboundDID,
       });
     } else {
       try {
@@ -259,7 +259,7 @@ export class InboundNumberService {
         await inboundChannel.continueInDialplan({
           context: config.voicemail.context,
           extension: inboundNumber.voicemail,
-          priority: 1
+          priority: 1,
         });
       } catch (err) {
         logger.error(
@@ -286,7 +286,7 @@ export class InboundNumberService {
       dialedPhoneNumber: inboundDID !== undefined ? inboundDID : '',
       callerIdName: inboundChannel.caller.name,
       callerIdNumber: inboundChannel.caller.number,
-      extension: ''
+      extension: '',
     };
 
     if (!(event.digit === '0' && citationNumber.length === 0) && event.digit !== '#') {

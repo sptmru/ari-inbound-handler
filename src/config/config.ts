@@ -7,7 +7,7 @@ export const config = {
     level: parsedConfig?.LOG_LEVEL != null ? parsedConfig.LOG_LEVEL : 'debug',
     directory: parsedConfig?.LOG_DIRECTORY != null ? parsedConfig.LOG_DIRECTORY : './logs',
     file: parsedConfig?.LOG_LEVEL != null ? `${parsedConfig.LOG_LEVEL}.log` : 'debug.log',
-    logToFile: parsedConfig?.LOG_TO_FILE != null ? parsedConfig.LOG_TO_FILE.toLowerCase() === 'true' : false
+    logToFile: parsedConfig?.LOG_TO_FILE != null ? parsedConfig.LOG_TO_FILE.toLowerCase() === 'true' : false,
   },
   db: {
     host: parsedConfig?.DB_HOST != null ? parsedConfig.DB_HOST : 'localhost',
@@ -15,7 +15,7 @@ export const config = {
     username: parsedConfig?.DB_USERNAME != null ? parsedConfig.DB_USERNAME : 'inboundnumbers',
     password: parsedConfig?.DB_PASSWORD != null ? parsedConfig.DB_PASSWORD : 'inboundnumbers',
     rootPassword: parsedConfig?.DB_ROOT_PASSWORD != null ? parsedConfig.DB_ROOT_PASSWORD : 'root',
-    name: parsedConfig?.DB_NAME != null ? parsedConfig.DB_NAME : 'inbound_numbers'
+    name: parsedConfig?.DB_NAME != null ? parsedConfig.DB_NAME : 'inbound_numbers',
   },
   smtp: {
     host: parsedConfig?.SMTP_HOST != null ? parsedConfig.SMTP_HOST : 'smtp.example.com',
@@ -24,7 +24,7 @@ export const config = {
     username: parsedConfig?.SMTP_USERNAME != null ? parsedConfig.SMTP_USERNAME : 'username',
     password: parsedConfig?.SMTP_PASSWORD != null ? parsedConfig.SMTP_PASSWORD : 'password',
     mailFrom: parsedConfig?.MAIL_FROM != null ? parsedConfig.MAIL_FROM : 'alert@gmail.com',
-    mailSubject: parsedConfig?.MAIL_SUBJECT != null ? parsedConfig.MAIL_SUBJECT : 'New Voicemail'
+    mailSubject: parsedConfig?.MAIL_SUBJECT != null ? parsedConfig.MAIL_SUBJECT : 'New Voicemail',
   },
   ari: {
     host: parsedConfig?.ARI_HOST != null ? parsedConfig.ARI_HOST : 'localhost',
@@ -40,18 +40,18 @@ export const config = {
     app17087298587:
       parsedConfig?.ARI_APP_NAME_17087298587 != null
         ? parsedConfig.ARI_APP_NAME_17087298587
-        : 'inbound_route_17087298587'
+        : 'inbound_route_17087298587',
   },
   voicemail: {
     context: parsedConfig?.VOICEMAIL_CONTEXT != null ? parsedConfig.VOICEMAIL_CONTEXT : 'to-voicemail',
-    directory: parsedConfig?.VOICEMAIL_DIRECTORY != null ? parsedConfig.VOICEMAIL_DIRECTORY : '/opt/voicemail'
+    directory: parsedConfig?.VOICEMAIL_DIRECTORY != null ? parsedConfig.VOICEMAIL_DIRECTORY : '/opt/voicemail',
   },
   callRecording: {
     directory: parsedConfig?.CALL_RECORDING_DIRECTORY != null ? parsedConfig.CALL_RECORDING_DIRECTORY : 'finished',
     baseDirectory:
       parsedConfig?.CALL_RECORDING_BASE_DIRECTORY != null
         ? parsedConfig.CALL_RECORDING_BASE_DIRECTORY
-        : '/var/spool/asterisk/recording'
+        : '/var/spool/asterisk/recording',
   },
   trunkName: parsedConfig?.TRUNK_NAME != null ? parsedConfig.TRUNK_NAME : 'twilio-na-us',
   greetingSound: parsedConfig?.GREETING_SOUND != null ? parsedConfig.GREETING_SOUND : 'speech_17087298587',
@@ -59,7 +59,7 @@ export const config = {
   pushNotificationsUrl:
     parsedConfig?.PUSH_NOTIFICATION_URL != null ? parsedConfig.PUSH_NOTIFICATION_URL : 'http://localhost',
   inboundQueue: {
-    ringTime: parsedConfig?.INBOUND_QUEUE_RING_TIME != null ? parseInt(parsedConfig.INBOUND_QUEUE_RING_TIME) : 15
+    ringTime: parsedConfig?.INBOUND_QUEUE_RING_TIME != null ? parseInt(parsedConfig.INBOUND_QUEUE_RING_TIME) : 15,
   },
   promptCitation: {
     greetingSound:
@@ -85,6 +85,6 @@ export const config = {
     apiBaseUrl:
       parsedConfig?.PROMPT_CITATION_API_BASE_URL != null
         ? parsedConfig.PROMPT_CITATION_API_BASE_URL
-        : 'http://promptcitationapi.ltd'
-  }
+        : 'http://promptcitationapi.ltd',
+  },
 };

@@ -13,7 +13,7 @@ const dataSource = new DataSource({
   synchronize: false,
   entities: ['src/entities/**/*.ts'],
   migrations: ['src/migrations/**/*.ts'],
-  subscribers: ['src/subscribers/**/*.ts']
+  subscribers: ['src/subscribers/**/*.ts'],
 });
 
 export { dataSource };

@@ -33,7 +33,7 @@ export class InboundQueueService {
         app: config.ari.app,
         appArgs: 'dialed',
         timeout: isPromptCitationQueue ? 3600 : config.inboundQueue.ringTime,
-        callerId: inboundChannel.caller.number
+        callerId: inboundChannel.caller.number,
       });
     } catch (err) {
       logger.error(`Error while calling queue member ${phoneNumber}`, err);
@@ -136,7 +136,7 @@ export class InboundQueueService {
           endpoint: phoneNumber.length > 4 ? `PJSIP/${phoneNumber}@${config.trunkName}` : `PJSIP/${phoneNumber}`,
           app: config.ari.app,
           appArgs: 'dialed',
-          callerId: dialedPhoneNumber
+          callerId: dialedPhoneNumber,
         });
 
         logger.debug(`Callback channel ${callbackChannel.id} originated to ${phoneNumber}`);
@@ -250,7 +250,7 @@ export class InboundQueueService {
         await inboundChannel.continueInDialplan({
           context: config.voicemail.context,
           extension: inboundNumber.voicemail,
-          priority: 1
+          priority: 1,
         });
       } catch (err) {
         logger.error(
@@ -285,8 +285,8 @@ export class InboundQueueService {
       {
         media: [
           `sound:${config.promptCitation.queueCallbackConfirmationSoundOne}`,
-          `sound:${config.promptCitation.queueCallbackConfirmationSoundTwo}`
-        ]
+          `sound:${config.promptCitation.queueCallbackConfirmationSoundTwo}`,
+        ],
       },
       playback
     );
@@ -358,7 +358,7 @@ export class InboundQueueService {
         void inboundChannel.continueInDialplan({
           context: config.voicemail.context,
           extension: inboundNumber.voicemail,
-          priority: 1
+          priority: 1,
         });
       } catch (err) {
         logger.error(
