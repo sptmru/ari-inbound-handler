@@ -33,7 +33,7 @@ export const config = {
     username: parsedConfig?.ARI_USERNAME != null ? parsedConfig.ARI_USERNAME : 'asterisk',
     password: parsedConfig?.ARI_PASSWORD != null ? parsedConfig.ARI_PASSWORD : 'asterisk',
     url:
-      parsedConfig?.ARI_PROTOCOL != null && parsedConfig?.ARI_HOST != null && parsedConfig?.ARI_PORT != null
+      parsedConfig?.ARI_PROTOCOL != null && parsedConfig.ARI_HOST != null && parsedConfig.ARI_PORT != null
         ? `${parsedConfig.ARI_PROTOCOL}://${parsedConfig.ARI_HOST}:${parsedConfig.ARI_PORT}`
         : 'http://localhost:8088',
     app: parsedConfig?.ARI_APP_NAME != null ? parsedConfig.ARI_APP_NAME : 'inbound-app',

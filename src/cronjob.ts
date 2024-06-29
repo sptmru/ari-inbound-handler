@@ -1,4 +1,5 @@
 import fs from 'fs';
+import { exit } from 'process';
 
 import { logger } from './misc/Logger';
 import { dataSource } from './data-source';
@@ -9,7 +10,7 @@ import { config } from './config/config';
 
 const pushNotificationsUrl = config.pushNotificationsUrl;
 
-(async () => {
+void (async (): Promise<void> => {
   try {
     await dataSource.initialize();
     logger.debug('Data Source initialized');
@@ -23,6 +24,7 @@ const pushNotificationsUrl = config.pushNotificationsUrl;
 
   // TODO: needs refactoring
 
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   if (voicemailFileNames !== null) {
     for (const [dirName, files] of Object.entries(voicemailFileNames)) {
       for (const voicemailFile of files as string[]) {
@@ -63,5 +65,5 @@ const pushNotificationsUrl = config.pushNotificationsUrl;
       }
     }
   }
-  process.exit(0);
+  exit(0);
 })();

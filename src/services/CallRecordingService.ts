@@ -30,10 +30,10 @@ export class CallRecordingService {
       duration,
       path_to_file: recordingFilePath,
       court_id: 0,
-      rdnis: ariData?.inboundDID != undefined ? ariData.inboundDID : '',
+      rdnis: ariData.inboundDID != undefined ? ariData.inboundDID : '',
     };
 
-    if (ariData?.inboundDID != undefined) {
+    if (ariData.inboundDID != undefined) {
       const inboundNumber = await InboundNumberService.getInboundNumber(ariData.inboundDID);
       if (inboundNumber) {
         const courtIdNum = Number(inboundNumber.court_id);

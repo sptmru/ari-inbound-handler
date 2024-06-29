@@ -7,14 +7,14 @@ import { dataSource } from '../data-source';
 import { Voicemail } from '../entities/Voicemail';
 import { logger } from '../misc/Logger';
 
-async function isDirectory(path: string): Promise<boolean> {
+async function isDirectory(directoryPath: string): Promise<boolean> {
   // fs.stat or fs.lstat are pretty much the same in this case. fs.lstat does not follow symlinks.
-  const stats = await fs.promises.lstat(path);
+  const stats = await fs.promises.lstat(directoryPath);
   return stats.isDirectory();
 }
 
-async function isFile(path: string): Promise<boolean> {
-  const stats = await fs.promises.lstat(path);
+async function isFile(filePath: string): Promise<boolean> {
+  const stats = await fs.promises.lstat(filePath);
   return stats.isFile();
 }
 
@@ -70,11 +70,6 @@ export class VoicemailService {
 
   static async getVoicemailByFilename(mailbox: string, filename: string): Promise<Voicemail | null> {
     return await dataSource.getRepository(Voicemail).findOne({ where: { filename, origmailbox: mailbox } });
-  }
-
-  static async markVoicemailAsSent(voicemail: Voicemail): Promise<void> {
-    voicemail.sent = true;
-    await dataSource.getRepository(Voicemail).save(voicemail);
   }
 
   static async addVoicemail(voicemail: Voicemail): Promise<Voicemail | null> {

@@ -2,7 +2,7 @@ import { infoByFilename } from 'wav-file-info';
 import { logger } from '../misc/Logger';
 
 export class WavService {
-  static async asyncInfoByFilename(filepath: string): Promise<number> {
+  static asyncInfoByFilename(filepath: string): Promise<number> {
     return new Promise((resolve, reject) => {
       infoByFilename(filepath, (err: Error | undefined, info: { duration: number }) => {
         if (err) {

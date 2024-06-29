@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
-import { promptCitationId } from '../types/PromptCitationIdEnum';
+import { PromptCitationId } from '../types/PromptCitationIdEnum';
 
 @Entity('inbound_number')
 export class InboundNumber {
@@ -30,6 +30,6 @@ export class InboundNumber {
   @Column('varchar', { length: 255, nullable: true })
   queue_numbers: string;
 
-  @Column({ type: 'enum', enum: promptCitationId, default: promptCitationId.NO })
+  @Column({ type: 'enum', enum: PromptCitationId, default: PromptCitationId.NO })
   prompt_citation_id: string;
 }

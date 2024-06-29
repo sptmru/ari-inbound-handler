@@ -1,9 +1,12 @@
 import * as ari from 'ari-client';
 import { Client, StasisStart, StasisEnd, Channel } from 'ari-client';
+import { exit } from 'process';
+
 import { logger } from './misc/Logger';
 import { dataSource } from './data-source';
 import { InboundNumberService } from './services/InboundNumberService';
 import { config } from './config/config';
+import { PromptCitationId } from './types/PromptCitationIdEnum';
 
 const ariUsername = config.ari.username;
 const ariPassword = config.ari.password;
@@ -13,7 +16,7 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
 
-(async () => {
+void (async (): Promise<void> => {
   try {
     await dataSource.initialize();
     logger.debug('Data Source initialized');
@@ -50,17 +53,15 @@ process.on('unhandledRejection', (reason, promise) => {
         inboundDID,
       };
 
-      void InboundNumberService.handleInboundQueue(inboundNumber, inboundDID, ariData);
-
-      // if (inboundNumber.prompt_citation_id === promptCitationId.YES) {
-      //   logger.debug(`Starting prompt citation IVR`);
-      //   await InboundNumberService.handlePromptCitationIvr(inboundNumber, ariData);
-      // } else {
-      //   void InboundNumberService.handleInboundQueue(inboundNumber, inboundDID, ariData);
-      // }
+      if (inboundNumber.prompt_citation_id === PromptCitationId.YES) {
+        logger.debug(`Starting prompt citation IVR`);
+        await InboundNumberService.handlePromptCitationIvr(inboundNumber, ariData);
+      } else {
+        void InboundNumberService.handleInboundQueue(inboundNumber, inboundDID, ariData);
+      }
     });
 
-    client.on('StasisEnd', async (event: StasisEnd, channel: Channel): Promise<void> => {
+    client.on('StasisEnd', (event: StasisEnd, channel: Channel): void => {
       logger.debug(`${event.type} on ${channel.name}`);
     });
 
@@ -72,7 +73,7 @@ process.on('unhandledRejection', (reason, promise) => {
     .then(stasisHandler)
     .catch(err => {
       logger.error(`Error connecting to ARI: ${err}`);
-      process.exit(1);
+      exit(1);
     });
 
   process.on('unhandledRejection', (reason, promise) => {

@@ -1,6 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, Index } from 'typeorm';
 
-enum isListened {
+// eslint-disable-next-line no-shadow
+enum IsListened {
   LISTENED = 'Y',
   NOT_LISTENED = 'N',
 }
@@ -59,6 +60,6 @@ export class Voicemail {
   @Column('bool', { default: false })
   sent: boolean;
 
-  @Column({ type: 'enum', enum: isListened, default: isListened.NOT_LISTENED })
+  @Column({ type: 'enum', enum: IsListened, default: IsListened.NOT_LISTENED })
   is_listened?: string;
 }

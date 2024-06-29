@@ -33,7 +33,7 @@
     ],
     "arrow-body-style": [2, "as-needed"],
     "no-nested-ternary": 2,
-    "max-params": [2, 3],
+    "max-params": [2, 4],
     "require-await": 2,
     "no-shadow": 2,
     "complexity": 2,
