@@ -2,7 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column, Index } from 'typeorm';
 
 enum isListened {
   LISTENED = 'Y',
-  NOT_LISTENED = 'N'
+  NOT_LISTENED = 'N',
 }
 
 @Entity('voicemail')

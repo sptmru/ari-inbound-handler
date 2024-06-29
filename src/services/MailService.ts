@@ -12,11 +12,11 @@ export class MailService {
       secure: config.smtp.secure,
       auth: {
         user: config.smtp.username,
-        pass: config.smtp.password
+        pass: config.smtp.password,
       },
       tls: {
-        ciphers: 'SSLv3'
-      }
+        ciphers: 'SSLv3',
+      },
     });
   }
 
@@ -25,7 +25,7 @@ export class MailService {
       from: config.smtp.mailFrom,
       subject,
       text,
-      attachments: attachments?.map(attachment => ({ path: attachment }))
+      attachments: attachments?.map(attachment => ({ path: attachment })),
     };
   }
 

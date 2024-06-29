@@ -55,7 +55,7 @@ export class VoicemailService {
 
     const rl = readline.createInterface({
       input: fileStream,
-      crlfDelay: Infinity
+      crlfDelay: Infinity,
     });
 
     for await (const line of rl) {

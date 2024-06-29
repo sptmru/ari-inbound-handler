@@ -43,7 +43,7 @@ const appName = config.ari.app17087298587;
           appName,
           trunkName: config.trunkName,
           callerId: config.callerId,
-          inboundDID
+          inboundDID,
         })
       );
 

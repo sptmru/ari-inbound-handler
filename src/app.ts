@@ -47,7 +47,7 @@ process.on('unhandledRejection', (reason, promise) => {
         appName: config.ari.app,
         trunkName: config.trunkName,
         callerId: inboundDID,
-        inboundDID
+        inboundDID,
       };
 
       void InboundNumberService.handleInboundQueue(inboundNumber, inboundDID, ariData);

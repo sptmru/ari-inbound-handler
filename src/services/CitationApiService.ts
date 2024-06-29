@@ -22,7 +22,7 @@ export class CitationApiService {
 
     try {
       const response = await axios.post(`${this.baseUrl}/crm/callqueue/notify`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
       logger.info(`Citation API request successful: ${response.status}`);
     } catch (err) {

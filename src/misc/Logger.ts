@@ -18,9 +18,9 @@ const logger = winston.createLogger({
   transports: config.log.logToFile
     ? [
         new winston.transports.Console({ format: consoleLogFormat }),
-        new winston.transports.File({ filename: `${config.log.directory}/${config.log.file}`, format: fileLogFormat })
+        new winston.transports.File({ filename: `${config.log.directory}/${config.log.file}`, format: fileLogFormat }),
       ]
-    : [new winston.transports.Console({ format: consoleLogFormat })]
+    : [new winston.transports.Console({ format: consoleLogFormat })],
 });
 
 export { logger };

@@ -55,7 +55,7 @@ const pushNotificationsUrl = config.pushNotificationsUrl;
               const emailText = `CallerID: ${voicemail.callerid}\nCalled number: ${inboundNumberData.phone}`;
               const subject = `${inboundNumberData.court_name} New Voicemail From ${voicemail.callerid}`;
               await MailService.sendMail(email, emailText, subject, [
-                `${voicemailDir}/${dirName}/INBOX/${voicemailFile}.wav`
+                `${voicemailDir}/${dirName}/INBOX/${voicemailFile}.wav`,
               ]);
             }
           }
