@@ -8,6 +8,7 @@ import { InboundNumberService } from './InboundNumberService';
 import { PromptCitationData } from '../types/PromptCitationData';
 import { CitationApiService } from './CitationApiService';
 import { CallbackQueue } from '../queues/CallbackQueue';
+import { PJSIPService } from './PJSIPService';
 
 export class InboundQueueService {
   static getListOfQueuePhoneNumbers(inboundNumber: InboundNumber): string[] {
@@ -129,7 +130,7 @@ export class InboundQueueService {
       }
 
       callResult.success = true;
-      await inboundChannel.stopMoh();
+      await InboundNumberService.stopMusicOnHold(inboundChannel);
 
       try {
         outboundChannel.once('StasisEnd', () => {
@@ -302,8 +303,65 @@ export class InboundQueueService {
     ariData: AriData
   ): Promise<void> {
     const { channel: inboundChannel, client } = ariData;
+
+    const queueNumbers = InboundQueueService.getListOfQueuePhoneNumbers(inboundNumber);
+    const { available: availableQueueMembers, busy: busyQueueMembers } = await PJSIPService.findAvailableAndBusyUsers(
+      queueNumbers,
+      client
+    );
+
+    if (availableQueueMembers.length > 0) {
+      return this.callAvailableQueueMembers(availableQueueMembers, inboundNumber, promptCitationData, ariData);
+    }
+
+    if (busyQueueMembers.length > 0) {
+      // start the queue
+      return this.callBusyQueueMembers(busyQueueMembers, inboundNumber, promptCitationData, ariData);
+    }
+
+    return InboundNumberService.redirectPromptCitationChannelToVoicemail(inboundChannel, inboundNumber);
+  }
+
+  static async callAvailableQueueMembers(
+    queueMembers: string[],
+    inboundNumber: InboundNumber,
+    promptCitationData: PromptCitationData,
+    ariData: AriData
+  ): Promise<void> {
+    const { channel: inboundChannel } = ariData;
+    logger.debug(`Calling available queue members ${queueMembers.join(', ')}`);
+
     const liveRecording = await CallRecordingService.createRecordingChannel(ariData);
 
+    inboundChannel.on('StasisEnd', async (event: StasisEnd, channel: Channel): Promise<void> => {
+      await InboundNumberService.stopRecording(channel, liveRecording);
+      logger.debug(`${event.type} on ${channel.name}`);
+    });
+
+    await InboundNumberService.startMusicOnHold(inboundChannel);
+
+    logger.debug(
+      `Starting inbound queue for ${promptCitationData.dialedPhoneNumber} and channel ${inboundChannel.name}`
+    );
+    const success = await InboundQueueService.callQueueMembers(queueMembers, { ...ariData }, true, promptCitationData);
+
+    await InboundNumberService.stopMusicOnHold(inboundChannel);
+
+    if (!success) {
+      return InboundNumberService.redirectPromptCitationChannelToVoicemail(inboundChannel, inboundNumber);
+    }
+  }
+
+  static async callBusyQueueMembers(
+    queueMembers: string[],
+    inboundNumber: InboundNumber,
+    promptCitationData: PromptCitationData,
+    ariData: AriData
+  ): Promise<void> {
+    const { channel: inboundChannel, client } = ariData;
+    logger.debug(`Calling busy queue members ${queueMembers.join(', ')}`);
+
+    const liveRecording = await CallRecordingService.createRecordingChannel(ariData);
     const playback = client.Playback();
 
     inboundChannel.on('StasisEnd', async (event: StasisEnd, channel: Channel): Promise<void> => {
@@ -323,7 +381,7 @@ export class InboundQueueService {
 
     try {
       await inboundChannel.play({ media: `sound:${config.promptCitation.queueCallbackInfoSound}` }, playback);
-      await inboundChannel.startMoh();
+      await InboundNumberService.startMusicOnHold(inboundChannel);
     } catch (err) {
       logger.error('Cannot play callback info sound on an inbound channel — there is no channel anymore');
       return;
@@ -331,9 +389,9 @@ export class InboundQueueService {
 
     const playCallbackInfoSoundInterval = setInterval(async () => {
       try {
-        await inboundChannel.stopMoh();
+        await InboundNumberService.stopMusicOnHold(inboundChannel);
         await inboundChannel.play({ media: `sound:${config.promptCitation.queueCallbackInfoSound}` }, playback);
-        await inboundChannel.startMoh();
+        await InboundNumberService.startMusicOnHold(inboundChannel);
       } catch (err) {
         logger.debug(`Failed to process callback info audio interval on channel ${inboundChannel.id}`);
       }
@@ -342,36 +400,18 @@ export class InboundQueueService {
     logger.debug(
       `Starting inbound queue for ${promptCitationData.dialedPhoneNumber} and channel ${inboundChannel.name}`
     );
-    const queueNumbers = InboundQueueService.getListOfQueuePhoneNumbers(inboundNumber);
     const success = await InboundQueueService.callQueueMembers(
-      queueNumbers,
+      queueMembers,
       { ...ariData, playback },
       true,
       promptCitationData
     );
 
     clearInterval(playCallbackInfoSoundInterval);
-    try {
-      void inboundChannel.stopMoh();
-    } catch (err) {
-      logger.debug(`Stopping MOH failed on ${inboundChannel.id}: there is no channel`);
-    }
+    await InboundNumberService.stopMusicOnHold(inboundChannel);
 
     if (!success) {
-      try {
-        logger.debug(`Redirecting channel ${inboundChannel.name} to voicemail ${inboundNumber.voicemail}`);
-        void inboundChannel.setChannelVar({ variable: 'MESSAGE', value: inboundNumber.message });
-        void inboundChannel.continueInDialplan({
-          context: config.voicemail.context,
-          extension: inboundNumber.voicemail,
-          priority: 1,
-        });
-      } catch (err) {
-        logger.error(
-          `Error while redirecting channel ${inboundChannel.name} to voicemail ${inboundNumber.voicemail}`,
-          err
-        );
-      }
+      return InboundNumberService.redirectPromptCitationChannelToVoicemail(inboundChannel, inboundNumber);
     }
   }
 }
