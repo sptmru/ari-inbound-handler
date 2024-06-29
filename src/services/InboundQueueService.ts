@@ -22,23 +22,97 @@ export class InboundQueueService {
   ): Promise<boolean> {
     const { client, channel: inboundChannel } = ariData;
 
-    let success = false;
+    const callResult = { success: false };
+    const outboundChannel = client.Channel();
 
     logger.debug(`Calling queue member ${phoneNumber}`);
 
-    const outboundChannel = client.Channel();
     try {
       await outboundChannel.originate({
         endpoint: phoneNumber.length > 4 ? `PJSIP/${phoneNumber}@${config.trunkName}` : `PJSIP/${phoneNumber}`,
         app: config.ari.app,
         appArgs: 'dialed',
-        timeout: isPromptCitationQueue ? 3600 : config.inboundQueue.ringTime,
+        timeout: isPromptCitationQueue ? config.promptCitation.queue.ringTime : config.inboundQueue.ringTime,
         callerId: inboundChannel.caller.number,
       });
     } catch (err) {
       logger.error(`Error while calling queue member ${phoneNumber}`, err);
       return false;
     }
+
+    inboundChannel.on('StasisEnd', (): void => {
+      logger.debug(`Inbound channel ${inboundChannel.id} got StasisEnd`);
+      void InboundNumberService.hangupChannel(outboundChannel);
+    });
+
+    if (isPromptCitationQueue) {
+      this.callPromptCitationQueueMember(
+        { outboundChannel, phoneNumber },
+        callResult,
+        promptCitationData as PromptCitationData,
+        ariData
+      );
+    } else {
+      this.callInboundQueueMember({ outboundChannel, phoneNumber }, callResult, ariData);
+    }
+
+    try {
+      return await new Promise(resolve => {
+        outboundChannel.once('ChannelDestroyed', () => {
+          logger.debug(`External channel ${outboundChannel.id} got ChannelDestroyed`);
+          resolve(callResult.success);
+        });
+      });
+    } catch (err) {
+      return false;
+    }
+  }
+
+  static callInboundQueueMember(
+    outboundData: { phoneNumber: string; outboundChannel: Channel },
+    callResult: { success: boolean },
+    ariData: AriData
+  ): void {
+    const { channel: inboundChannel, client } = ariData;
+    const { outboundChannel, phoneNumber: outboundPhoneNumber } = outboundData;
+
+    logger.debug(`Called inbound queue member ${outboundPhoneNumber}`);
+
+    outboundChannel.on('StasisStart', (): void => {
+      logger.debug(`External queue channel ${outboundChannel.id} got StasisStart`);
+      const bridge = client.Bridge();
+
+      outboundChannel.once('StasisEnd', async (): Promise<void> => {
+        logger.debug(`External queue channel ${outboundChannel.id} got StasisEnd`);
+
+        logger.debug(`Destroying bridge ${bridge.id}`);
+        await InboundNumberService.destroyBridge(bridge);
+        await InboundNumberService.hangupChannel(inboundChannel);
+      });
+
+      outboundChannel.answer((): void => {
+        callResult.success = true;
+        logger.debug(`External queue channel ${outboundChannel.id} answered`);
+        bridge.create({ type: 'mixing' }, async (): Promise<void> => {
+          logger.debug(`Bridge ${bridge.id} created`);
+          await inboundChannel.answer();
+          await bridge.addChannel({ channel: [inboundChannel.id, outboundChannel.id] });
+          logger.debug(`Channels ${inboundChannel.id} and ${outboundChannel.id} were added to bridge ${bridge.id}`);
+        });
+      });
+    });
+  }
+
+  static callPromptCitationQueueMember(
+    outboundData: { phoneNumber: string; outboundChannel: Channel },
+    callResult: { success: boolean },
+    promptCitationData: PromptCitationData,
+    ariData: AriData
+  ): void {
+    const { channel: inboundChannel, client } = ariData;
+    const { outboundChannel, phoneNumber: outboundPhoneNumber } = outboundData;
+
+    logger.debug(`Called prompt citation queue member ${outboundPhoneNumber}`);
 
     const callbackChannel = client.Channel();
     const callbackBridge = client.Bridge();
@@ -54,7 +128,7 @@ export class InboundQueueService {
         await this.promptCitationCallback(callbackChannel, outboundChannel, bridge, callbackBridge);
       }
 
-      success = true;
+      callResult.success = true;
       await inboundChannel.stopMoh();
 
       try {
@@ -68,10 +142,8 @@ export class InboundQueueService {
           void InboundNumberService.hangupChannel(callbackChannel);
         });
 
-        if (isPromptCitationQueue && promptCitationData) {
-          promptCitationData.extension = phoneNumber;
-          void CitationApiService.sendNotificationRequest(promptCitationData);
-        }
+        promptCitationData.extension = outboundPhoneNumber;
+        void CitationApiService.sendNotificationRequest(promptCitationData);
 
         bridge.create({ type: 'mixing' }, () => {
           logger.debug(`Bridge ${bridge.id} created`);
@@ -83,17 +155,6 @@ export class InboundQueueService {
         logger.debug('No outbound channel');
       }
     });
-
-    try {
-      return await new Promise(resolve => {
-        outboundChannel.once('ChannelDestroyed', () => {
-          logger.debug(`External channel ${outboundChannel.id} got ChannelDestroyed`);
-          resolve(success);
-        });
-      });
-    } catch (err) {
-      return false;
-    }
   }
 
   static async promptCitationCallback(
