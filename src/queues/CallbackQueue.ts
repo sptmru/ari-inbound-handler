@@ -5,6 +5,7 @@ export class CallbackQueue<T> {
 
   protected constructor() {}
 
+  // eslint-disable-next-line no-shadow
   public static getInstance<T>(): CallbackQueue<T> {
     if (!CallbackQueue.instance) {
       CallbackQueue.instance = new CallbackQueue<T>();

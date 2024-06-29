@@ -96,7 +96,7 @@ export class InboundNumberService {
       logger.debug(`Internal channel ${internalChannel.id} got ChannelDestroyed`);
 
       logger.debug(`Hanging up incoming channel ${incomingChannel.id}`);
-      this.hangupChannel(incomingChannel);
+      void this.hangupChannel(incomingChannel);
     });
 
     internalChannel.once('StasisStart', () => {
@@ -108,7 +108,7 @@ export class InboundNumberService {
         logger.debug(`Internal channel ${internalChannel.id} got StasisEnd`);
 
         logger.debug(`Destroying bridge ${bridge.id}`);
-        this.destroyBridge(bridge);
+        void this.destroyBridge(bridge);
       });
 
       internalChannel.answer(async () => {
@@ -116,7 +116,7 @@ export class InboundNumberService {
         liveRecording = await CallRecordingService.createRecordingChannel(ariData);
         bridge.create({ type: 'mixing' }, () => {
           logger.debug(`Bridge ${bridge.id} created`);
-          bridge.addChannel({ channel: [incomingChannel.id, internalChannel.id] });
+          void bridge.addChannel({ channel: [incomingChannel.id, internalChannel.id] });
           logger.debug(`Channels ${incomingChannel.id} and ${internalChannel.id} were added to bridge ${bridge.id}`);
         });
       });
@@ -162,7 +162,7 @@ export class InboundNumberService {
       logger.debug(`External channel ${externalChannel.id} got ChannelDestroyed`);
 
       logger.debug(`Hanging up incoming channel ${incomingChannel.id}`);
-      this.hangupChannel(incomingChannel);
+      void this.hangupChannel(incomingChannel);
     });
 
     externalChannel.once('StasisStart', () => {
@@ -174,13 +174,13 @@ export class InboundNumberService {
         logger.debug(`External channel ${externalChannel.id} got StasisEnd`);
 
         logger.debug(`Destroying bridge ${bridge.id}`);
-        this.destroyBridge(bridge);
+        void this.destroyBridge(bridge);
       });
 
       externalChannel.answer(() => {
         bridge.create({ type: 'mixing' }, () => {
           logger.debug(`Bridge ${bridge.id} created`);
-          bridge.addChannel({ channel: [incomingChannel.id, externalChannel.id] });
+          void bridge.addChannel({ channel: [incomingChannel.id, externalChannel.id] });
           logger.debug(`Channels ${incomingChannel.id} and ${externalChannel.id} were added to bridge ${bridge.id}`);
         });
       });
@@ -225,7 +225,7 @@ export class InboundNumberService {
       return;
     }
     try {
-      await liveRecording?.stop();
+      await liveRecording.stop();
       logger.debug(`Recording on channel ${channel.id} stopped`);
     } catch (err) {
       logger.debug(`Failed to stop recording on channel ${channel.id} — nothing to stop`);
@@ -252,24 +252,11 @@ export class InboundNumberService {
         callerId: inboundDID,
       });
     } else {
-      try {
-        logger.debug(`Redirecting channel ${inboundChannel.name} to voicemail ${inboundNumber.voicemail}`);
-        await inboundChannel.answer();
-        await inboundChannel.setChannelVar({ variable: 'MESSAGE', value: inboundNumber.message });
-        await inboundChannel.continueInDialplan({
-          context: config.voicemail.context,
-          extension: inboundNumber.voicemail,
-          priority: 1,
-        });
-      } catch (err) {
-        logger.error(
-          `Error while redirecting channel ${inboundChannel.name} to voicemail ${inboundNumber.voicemail}`,
-          err
-        );
-      }
+      void this.redirectInboundChannelToVoicemail(inboundChannel, inboundNumber);
     }
   }
 
+  // eslint-disable-next-line max-params
   static async handlePromptCitationDTMFHandler(
     inboundNumber: InboundNumber,
     event: ChannelDtmfReceived,
@@ -319,5 +306,23 @@ export class InboundNumberService {
     inboundChannel.on('ChannelDtmfReceived', async event => {
       await this.handlePromptCitationDTMFHandler(inboundNumber, event, { ...ariData, playback });
     });
+  }
+
+  static async redirectInboundChannelToVoicemail(inboundChannel: Channel, inboundNumber: InboundNumber): Promise<void> {
+    try {
+      logger.debug(`Redirecting channel ${inboundChannel.name} to voicemail ${inboundNumber.voicemail}`);
+      await inboundChannel.answer();
+      await inboundChannel.setChannelVar({ variable: 'MESSAGE', value: inboundNumber.message });
+      await inboundChannel.continueInDialplan({
+        context: config.voicemail.context,
+        extension: inboundNumber.voicemail,
+        priority: 1,
+      });
+    } catch (err) {
+      logger.error(
+        `Error while redirecting channel ${inboundChannel.name} to voicemail ${inboundNumber.voicemail}`,
+        err
+      );
+    }
   }
 }

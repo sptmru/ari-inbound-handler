@@ -5,7 +5,7 @@ import Mail from 'nodemailer/lib/mailer';
 import { config } from '../config/config';
 
 export class MailService {
-  static createTransport() {
+  static createTransport(): nodemailer.Transporter {
     return nodemailer.createTransport({
       host: config.smtp.host,
       port: config.smtp.port,

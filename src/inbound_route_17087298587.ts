@@ -1,5 +1,6 @@
 import * as ari from 'ari-client';
 import { Client, StasisStart, StasisEnd, Channel, Playback } from 'ari-client';
+import { exit } from 'process';
 
 import { logger } from './misc/Logger';
 import { dataSource } from './data-source';
@@ -12,7 +13,7 @@ const ariUrl = config.ari.url;
 
 const appName = config.ari.app17087298587;
 
-(async () => {
+void (async (): Promise<void> => {
   try {
     await dataSource.initialize();
     logger.debug('Data Source initialized');
@@ -32,11 +33,11 @@ const appName = config.ari.app17087298587;
 
       const internalNumber: Array<string> = [];
       const playback: Playback = client.Playback();
-      channel.answer();
+      void channel.answer();
 
-      channel.on('ChannelDtmfReceived', event =>
+      channel.on('ChannelDtmfReceived', dtmfEvent =>
         InboundNumberService.handleInternalNumberDtmf(internalNumber, {
-          dtmfReceiveEvent: event,
+          dtmfReceiveEvent: dtmfEvent,
           channel,
           playback,
           client,
@@ -50,7 +51,7 @@ const appName = config.ari.app17087298587;
       logger.debug(`Playing ${config.greetingSound} to ${channel.id}`);
       await channel.play({ media: [`sound:${config.greetingSound}`, `sound:${config.greetingSound}`] }, playback);
     });
-    client.on('StasisEnd', async (event: StasisEnd, channel: Channel): Promise<void> => {
+    client.on('StasisEnd', (event: StasisEnd, channel: Channel): void => {
       logger.debug(`${event.type} on ${channel.name}`);
     });
 
@@ -62,6 +63,6 @@ const appName = config.ari.app17087298587;
     .then(stasisHandler)
     .catch(err => {
       logger.error(`Error connecting to ARI: ${err}`);
-      process.exit(1);
+      exit(1);
     });
 })();

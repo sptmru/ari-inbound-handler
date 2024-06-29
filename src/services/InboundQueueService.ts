@@ -1,4 +1,4 @@
-import { Bridge, Channel, ChannelDtmfReceived, LiveRecording, Playback, StasisEnd } from 'ari-client';
+import { Bridge, Channel, ChannelDtmfReceived, Playback, StasisEnd } from 'ari-client';
 import { config } from '../config/config';
 import { InboundNumber } from '../entities/InboundNumber';
 import { logger } from '../misc/Logger';
@@ -62,10 +62,10 @@ export class InboundQueueService {
           logger.debug(`External queue channel ${outboundChannel.id} got StasisEnd`);
 
           logger.debug(`Destroying bridge ${bridge.id}`);
-          InboundNumberService.destroyBridge(bridge);
-          InboundNumberService.hangupChannel(inboundChannel);
-          InboundNumberService.destroyBridge(callbackBridge);
-          InboundNumberService.hangupChannel(callbackChannel);
+          void InboundNumberService.destroyBridge(bridge);
+          void InboundNumberService.hangupChannel(inboundChannel);
+          void InboundNumberService.destroyBridge(callbackBridge);
+          void InboundNumberService.hangupChannel(callbackChannel);
         });
 
         if (isPromptCitationQueue && promptCitationData) {
@@ -76,7 +76,7 @@ export class InboundQueueService {
         bridge.create({ type: 'mixing' }, () => {
           logger.debug(`Bridge ${bridge.id} created`);
           // await inboundChannel.answer();
-          bridge.addChannel({ channel: [inboundChannel.id, outboundChannel.id] });
+          void bridge.addChannel({ channel: [inboundChannel.id, outboundChannel.id] });
           logger.debug(`Channels ${inboundChannel.id} and ${outboundChannel.id} were added to bridge ${bridge.id}`);
         });
       } catch (err) {
@@ -115,9 +115,9 @@ export class InboundQueueService {
         callbackChannel.once('StasisEnd', () => {
           logger.debug(`Callback channel ${callbackChannel.id} got StasisEnd`);
           logger.debug(`Destroying bridge ${callbackBridge.id}`);
-          InboundNumberService.destroyBridge(bridge);
-          InboundNumberService.destroyBridge(callbackBridge);
-          InboundNumberService.hangupChannel(outboundChannel);
+          void InboundNumberService.destroyBridge(bridge);
+          void InboundNumberService.destroyBridge(callbackBridge);
+          void InboundNumberService.hangupChannel(outboundChannel);
         });
 
         callbackBridge.create({ type: 'mixing' }, async () => {
@@ -144,48 +144,6 @@ export class InboundQueueService {
         logger.error(`Error while calling back to ${callbackData.dialedPhoneNumber}: ${err}`);
       }
     }
-  }
-
-  static async callQueueMembersRingall(
-    queueNumbers: string[],
-    ariData: AriData,
-    isPromptCitationQueue: boolean = false,
-    promptCitationData?: PromptCitationData
-  ): Promise<boolean> {
-    if (queueNumbers.length === 0) {
-      logger.error(`No queue numbers found`);
-      return false;
-    }
-
-    logger.debug(`Calling queue members ${queueNumbers.join(', ')}`);
-
-    let success = false;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const ongoingCalls: any[] = [];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let answeredChannel: any = null;
-
-    for (const number of queueNumbers) {
-      ongoingCalls.push(
-        this.callQueueMember(number, ariData, isPromptCitationQueue, promptCitationData).then(answered => {
-          if (answered && answeredChannel === null) {
-            answeredChannel = number;
-            success = true;
-            // Drop other calls
-            ongoingCalls.forEach(call => {
-              if (call.phoneNumber !== number) {
-                InboundNumberService.hangupChannel(call.outboundChannel);
-              }
-            });
-          }
-        })
-      );
-    }
-
-    // Wait for all calls to finish
-    await Promise.all(ongoingCalls);
-
-    return success;
   }
 
   static async callQueueMembers(
@@ -243,55 +201,36 @@ export class InboundQueueService {
     const success = await InboundQueueService.callQueueMembers(queueNumbers, ariData);
 
     if (!success) {
-      try {
-        logger.debug(`Redirecting channel ${inboundChannel.name} to voicemail ${inboundNumber.voicemail}`);
-        await inboundChannel.answer();
-        await inboundChannel.setChannelVar({ variable: 'MESSAGE', value: inboundNumber.message });
-        await inboundChannel.continueInDialplan({
-          context: config.voicemail.context,
-          extension: inboundNumber.voicemail,
-          priority: 1,
-        });
-      } catch (err) {
-        logger.error(
-          `Error while redirecting channel ${inboundChannel.name} to voicemail ${inboundNumber.voicemail}`,
-          err
-        );
-      }
+      void InboundNumberService.redirectInboundChannelToVoicemail(inboundChannel, inboundNumber);
     }
   }
 
-  static async callbackRequestHandler(
-    inboundChannel: Channel,
-    event: ChannelDtmfReceived,
-    playback: Playback,
-    liveRecording: LiveRecording,
-    promptCitationData: PromptCitationData
-  ): Promise<void> {
-    if (event.digit !== '1') {
+  static async callbackRequestHandler(promptCitationData: PromptCitationData, ariData: AriData): Promise<void> {
+    const { channel: inboundChannel, dtmfReceiveEvent: event, playback, liveRecording } = ariData;
+    if (event?.digit !== '1') {
       return;
     }
 
     logger.info(`Channel ${inboundChannel.id} pressed 1 to request a callback, processing`);
     inboundChannel.removeAllListeners('ChannelDtmfReceived');
-    await InboundNumberService.stopPlayback(playback);
+    await InboundNumberService.stopPlayback(playback as Playback);
     await InboundNumberService.stopRecording(inboundChannel, liveRecording);
 
     const callbackQueue = CallbackQueue.getInstance<PromptCitationData>();
     callbackQueue.enqueue(promptCitationData);
 
     // TODO: we need to say phone number here
-    await inboundChannel.play(
+    void inboundChannel.play(
       {
         media: [
           `sound:${config.promptCitation.queueCallbackConfirmationSoundOne}`,
           `sound:${config.promptCitation.queueCallbackConfirmationSoundTwo}`,
         ],
       },
-      playback
+      playback as Playback
     );
 
-    playback.once('PlaybackFinished', async () => {
+    (playback as Playback).once('PlaybackFinished', async () => {
       await InboundNumberService.hangupChannel(inboundChannel);
     });
   }
@@ -312,7 +251,13 @@ export class InboundQueueService {
     });
 
     inboundChannel.on('ChannelDtmfReceived', async (event: ChannelDtmfReceived): Promise<void> => {
-      await this.callbackRequestHandler(inboundChannel, event, playback, liveRecording, promptCitationData);
+      await this.callbackRequestHandler(promptCitationData, {
+        ...ariData,
+        dtmfReceiveEvent: event,
+        playback,
+        liveRecording,
+        channel: inboundChannel,
+      });
     });
 
     try {
