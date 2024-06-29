@@ -211,6 +211,24 @@ export class InboundNumberService {
     }
   }
 
+  static async startMusicOnHold(channel: Channel): Promise<void> {
+    try {
+      await channel.startMoh();
+      logger.debug(`Music on hold started on channel ${channel.id}`);
+    } catch (err) {
+      logger.error(`Failed to start music on hold on channel ${channel.id}`);
+    }
+  }
+
+  static async stopMusicOnHold(channel: Channel): Promise<void> {
+    try {
+      await channel.stopMoh();
+      logger.debug(`Music on hold stopped on channel ${channel.id}`);
+    } catch (err) {
+      logger.error(`Failed to stop music on hold on channel ${channel.id}`);
+    }
+  }
+
   static async stopPlayback(playback: Playback): Promise<void> {
     try {
       await playback.stop();
@@ -314,6 +332,23 @@ export class InboundNumberService {
       await inboundChannel.answer();
       await inboundChannel.setChannelVar({ variable: 'MESSAGE', value: inboundNumber.message });
       await inboundChannel.continueInDialplan({
+        context: config.voicemail.context,
+        extension: inboundNumber.voicemail,
+        priority: 1,
+      });
+    } catch (err) {
+      logger.error(
+        `Error while redirecting channel ${inboundChannel.name} to voicemail ${inboundNumber.voicemail}`,
+        err
+      );
+    }
+  }
+
+  static redirectPromptCitationChannelToVoicemail(inboundChannel: Channel, inboundNumber: InboundNumber): void {
+    try {
+      logger.debug(`Redirecting channel ${inboundChannel.name} to voicemail ${inboundNumber.voicemail}`);
+      void inboundChannel.setChannelVar({ variable: 'MESSAGE', value: inboundNumber.message });
+      void inboundChannel.continueInDialplan({
         context: config.voicemail.context,
         extension: inboundNumber.voicemail,
         priority: 1,
