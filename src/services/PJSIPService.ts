@@ -1,5 +1,6 @@
 import { Channel, Client } from 'ari-client';
 import { PJSIPExtensionStatus } from '../types/PJSIPExtensionStatus';
+import { AvailableAndBusyPJSIPExtensions } from '../types/AvailableAndBusyPJSIPExtensions';
 
 export class PJSIPService {
   static async checkIfUserIsOnline(user: string, client: Client): Promise<boolean> {
@@ -32,5 +33,22 @@ export class PJSIPService {
     }
 
     return false;
+  }
+
+  static async findAvailableAndBusyUsers(users: string[], client: Client): Promise<AvailableAndBusyPJSIPExtensions> {
+    const available: string[] = [];
+    const busy: string[] = [];
+
+    for (const user of users) {
+      const userOnline = await this.checkIfUserIsOnline(user, client);
+      if (!userOnline) {
+        continue;
+      }
+
+      const userAvailable = await this.checkIfUserIsAvailable(user, client);
+      userAvailable ? available.push(user) : busy.push(user);
+    }
+
+    return { available, busy };
   }
 }
