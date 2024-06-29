@@ -62,6 +62,12 @@ export const config = {
     ringTime: parsedConfig?.INBOUND_QUEUE_RING_TIME != null ? parseInt(parsedConfig.INBOUND_QUEUE_RING_TIME) : 15,
   },
   promptCitation: {
+    queue: {
+      ringTime:
+        parsedConfig?.PROMPT_CITATION_QUEUE_RING_TIME != null
+          ? parseInt(parsedConfig.PROMPT_CITATION_QUEUE_RING_TIME)
+          : 3600,
+    },
     greetingSound:
       parsedConfig?.PROMPT_CITATION_IVR_GREETING_SOUND != null
         ? parsedConfig.PROMPT_CITATION_IVR_GREETING_SOUND
