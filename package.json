@@ -43,7 +43,7 @@
     "mysql2": "^3.6.5",
     "nodemailer": "^6.9.7",
     "reflect-metadata": "^0.1.13",
-    "typeorm": "^0.3.17",
+    "typeorm": "^0.3.20",
     "undici-types": "^6.0.1",
     "wav-file-info": "^0.0.10",
     "winston": "^3.11.0"
