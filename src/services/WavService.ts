@@ -23,4 +23,8 @@ export class WavService {
       return 0;
     }
   }
+
+  static getPhoneNumberSounds(phoneNumber: string): string[] {
+    return phoneNumber.split('').map(digit => `sound:digits/${digit}`);
+  }
 }
