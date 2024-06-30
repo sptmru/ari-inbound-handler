@@ -9,6 +9,7 @@ import { PromptCitationData } from '../types/PromptCitationData';
 import { CitationApiService } from './CitationApiService';
 import { CallbackQueue } from '../queues/CallbackQueue';
 import { PJSIPService } from './PJSIPService';
+import { WavService } from './WavService';
 
 export class InboundQueueService {
   static getListOfQueuePhoneNumbers(inboundNumber: InboundNumber): string[] {
@@ -275,19 +276,20 @@ export class InboundQueueService {
 
     logger.info(`Channel ${inboundChannel.id} pressed 1 to request a callback, processing`);
     inboundChannel.removeAllListeners('ChannelDtmfReceived');
+    inboundChannel.removeAllListeners('StasisEnd');
     await InboundNumberService.stopPlayback(playback as Playback);
     await InboundNumberService.stopRecording(inboundChannel, liveRecording);
 
     const callbackQueue = CallbackQueue.getInstance<PromptCitationData>();
     callbackQueue.enqueue(promptCitationData);
 
-    // TODO: we need to say phone number here
+    const phoneNumberSounds = WavService.getPhoneNumberSounds(inboundChannel.caller.number);
+    phoneNumberSounds.unshift(`sound:${config.promptCitation.queueCallbackConfirmationSoundOne}`);
+    phoneNumberSounds.push(`sound:${config.promptCitation.queueCallbackConfirmationSoundTwo}`);
+
     void inboundChannel.play(
       {
-        media: [
-          `sound:${config.promptCitation.queueCallbackConfirmationSoundOne}`,
-          `sound:${config.promptCitation.queueCallbackConfirmationSoundTwo}`,
-        ],
+        media: phoneNumberSounds,
       },
       playback as Playback
     );
