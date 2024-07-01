@@ -1,5 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
 import { PromptCitationId } from '../types/PromptCitationIdEnum';
+import { CallTimeRange } from './CallTimeRange';
 
 @Entity('inbound_number')
 export class InboundNumber {
@@ -30,6 +31,12 @@ export class InboundNumber {
   @Column('varchar', { length: 255, nullable: true })
   queue_numbers: string;
 
+  @Column('varchar', { length: 255, nullable: true })
+  overflow_number: string;
+
   @Column({ type: 'enum', enum: PromptCitationId, default: PromptCitationId.NO })
   prompt_citation_id: string;
+
+  @OneToMany(() => CallTimeRange, callTimeRange => callTimeRange.inboundNumber)
+  callTimeRanges: CallTimeRange[];
 }
