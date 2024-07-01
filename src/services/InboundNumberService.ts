@@ -1,4 +1,5 @@
 import axios from 'axios';
+import * as moment from 'moment-timezone';
 import { Channel, Bridge, LiveRecording, ChannelDtmfReceived, Playback } from 'ari-client';
 
 import { dataSource } from '../data-source';
@@ -13,6 +14,9 @@ import { CallRecordingService } from './CallRecordingService';
 import { config } from '../config/config';
 import { InboundQueueService } from './InboundQueueService';
 import { PromptCitationData } from '../types/PromptCitationData';
+import { Weekday } from '../types/Weekday';
+import { CallTimeRange } from '../entities/CallTimeRange';
+import { LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
 
 export class InboundNumberService {
   static async getInboundNumbers(): Promise<InboundNumber[]> {
@@ -323,6 +327,28 @@ export class InboundNumberService {
       default:
         return [];
     }
+  }
+
+  static async checkOverflowStatus(inboundNumber: InboundNumber): Promise<boolean> {
+    logger.debug(`Checking current overflow status for inbound number ${inboundNumber.phone}`);
+    const now = moment.tz(config.timezone);
+    const currentWeekday = now.format('dddd') as Weekday;
+    const currentTime = now.format('HH:mm:ss');
+
+    const timeRange = await dataSource.getRepository(CallTimeRange).find({
+      where: {
+        inboundNumber,
+        weekday: currentWeekday,
+        start_time: LessThanOrEqual(currentTime),
+        end_time: MoreThanOrEqual(currentTime),
+      },
+    });
+
+    timeRange.length > 0
+      ? logger.debug(`Overflow status is active for inbound number ${inboundNumber.phone}`)
+      : logger.debug(`Overflow status is inactive for inbound number ${inboundNumber.phone}`);
+
+    return timeRange.length > 0;
   }
 
   static async handlePromptCitationIvr(inboundNumber: InboundNumber, ariData: AriData): Promise<void> {
