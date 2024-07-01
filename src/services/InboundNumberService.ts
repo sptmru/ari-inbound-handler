@@ -310,13 +310,31 @@ export class InboundNumberService {
     }
   }
 
+  static getCourtAudio(inboundNumber: InboundNumber): string[] {
+    const { court_id: courtId } = inboundNumber;
+    switch (courtId.toString()) {
+      case '16':
+        return ['sound:court16'];
+      case '18':
+        return ['sound:court18'];
+      case '19':
+      case '20':
+        return ['sound:court19'];
+      default:
+        return [];
+    }
+  }
+
   static async handlePromptCitationIvr(inboundNumber: InboundNumber, ariData: AriData): Promise<void> {
     const { client, channel: inboundChannel } = ariData;
     const playback = client.Playback();
 
+    const media = this.getCourtAudio(inboundNumber);
+    media.push(`sound:${config.promptCitation.greetingSound}`);
+
     try {
       await inboundChannel.answer();
-      await inboundChannel.play({ media: `sound:${config.promptCitation.greetingSound}` }, playback);
+      await inboundChannel.play({ media }, playback);
     } catch (err) {
       logger.error(`No inbound channel anymore, stop prompt citation IVR`);
     }
