@@ -93,4 +93,5 @@ export const config = {
         ? parsedConfig.PROMPT_CITATION_API_BASE_URL
         : 'http://promptcitationapi.ltd',
   },
+  timezone: parsedConfig?.TIMEZONE != null ? parsedConfig.TIMEZONE : 'America/New_York',
 };
