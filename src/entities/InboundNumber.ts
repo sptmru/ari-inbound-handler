@@ -37,6 +37,6 @@ export class InboundNumber {
   @Column({ type: 'enum', enum: PromptCitationId, default: PromptCitationId.NO })
   prompt_citation_id: string;
 
-  @OneToMany(() => CallTimeRange, callTimeRange => callTimeRange.inboundNumber)
+  @OneToMany('CallTimeRange', 'inboundNumber')
   callTimeRanges: CallTimeRange[];
 }

@@ -19,6 +19,6 @@ export class CallTimeRange {
   @Column({ type: 'time' })
   end_time: string;
 
-  @ManyToOne(() => InboundNumber, inboundNumber => inboundNumber.callTimeRanges)
+  @ManyToOne('InboundNumber', 'callTimeRanges')
   inboundNumber: InboundNumber;
 }
