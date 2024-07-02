@@ -365,7 +365,30 @@ export class InboundNumberService {
       logger.error(`No inbound channel anymore, stop prompt citation IVR`);
     }
 
+    let playbackTimeout: NodeJS.Timeout;
+    let repeats = 0;
+
+    (playback as Playback).on('PlaybackFinished', () => {
+      if (repeats >= 2) {
+        playbackTimeout = setTimeout(async (): Promise<void> => {
+          await this.hangupChannel(inboundChannel);
+        }, 5000);
+      } else {
+        repeats++;
+        playbackTimeout = setTimeout(async (): Promise<void> => {
+          await inboundChannel.play({ media: `sound:${config.promptCitation.greetingSound}` }, playback);
+        }, 5000);
+      }
+    });
+
     inboundChannel.on('ChannelDtmfReceived', async event => {
+      try {
+        void playback.stop();
+        clearTimeout(playbackTimeout);
+        inboundChannel.removeAllListeners('PlaybackFinished');
+      } catch (err) {
+        logger.error(`No playback anymore, nothing to stop`);
+      }
       await this.handlePromptCitationDTMFHandler(inboundNumber, event, { ...ariData, playback });
     });
   }
