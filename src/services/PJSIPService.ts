@@ -51,4 +51,20 @@ export class PJSIPService {
 
     return { available, busy };
   }
+
+  static async checkIfChannelExists(channelId: string, client: Client): Promise<boolean> {
+    const channels = await client.channels.list();
+    const channel = channels.find(ch => ch.id === channelId);
+
+    return channel !== undefined;
+  }
+
+  static async checkIfChannelExistsV2(channelId: string, client: Client): Promise<boolean> {
+    try {
+      await client.channels.get({ channelId: channelId });
+      return true;
+    } catch (err) {
+      return false;
+    }
+  }
 }

@@ -30,6 +30,13 @@ export class InboundQueueService {
 
     logger.debug(`Calling queue member ${phoneNumber}`);
 
+    const inboundChannelExists = await PJSIPService.checkIfChannelExists(inboundChannel.id, client);
+
+    if (!inboundChannelExists) {
+      logger.debug(`Inbound channel ${inboundChannel.id} does not exist anymore`);
+      return false;
+    }
+
     try {
       await outboundChannel.originate({
         endpoint: phoneNumber.length > 4 ? `PJSIP/${phoneNumber}@${config.trunkName}` : `PJSIP/${phoneNumber}`,
@@ -225,6 +232,18 @@ export class InboundQueueService {
 
     let success = false;
     const agentChannels: Channel[] = [];
+
+    ariData.channel.on('StasisEnd', () => {
+      for (const ch of agentChannels) {
+        void InboundNumberService.hangupChannel(ch);
+      }
+    });
+    ariData.channel.on('ChannelDestroyed', () => {
+      for (const ch of agentChannels) {
+        void InboundNumberService.hangupChannel(ch);
+      }
+    });
+
     for (const number of queueNumbers) {
       const channel = ariData.client.Channel();
       agentChannels.push(channel);
