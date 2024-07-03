@@ -310,17 +310,18 @@ export class InboundQueueService {
     playbacks.forEach(playback => InboundNumberService.stopPlayback(playback));
 
     const queueNumbers = InboundQueueService.getListOfQueuePhoneNumbers(inboundNumber);
-    let activeQueueNumbers = await Promise.all(
-      queueNumbers.map(async (queueNumber: string): Promise<string | null> => {
-        const extensionIsActive = await ExtensionParametersService.getExtensionStatus(queueNumber);
-        return extensionIsActive ? queueNumber : null;
-      })
-    );
-    activeQueueNumbers = activeQueueNumbers.filter(item => item !== null);
     let { available: availableQueueMembers, busy: busyQueueMembers } = await PJSIPService.findAvailableAndBusyUsers(
-      activeQueueNumbers as string[],
+      queueNumbers as string[],
       client
     );
+
+    availableQueueMembers = await Promise.all(
+      availableQueueMembers.map(async (queueNumber: string): Promise<string> => {
+        const extensionIsActive = await ExtensionParametersService.getExtensionStatus(queueNumber);
+        return extensionIsActive ? queueNumber : '';
+      })
+    );
+    availableQueueMembers = availableQueueMembers.filter(item => item !== '');
 
     availableQueueMembers = this.applyRoundsQuantityToAgentsList(availableQueueMembers as string[]);
     busyQueueMembers = this.applyRoundsQuantityToAgentsList(busyQueueMembers as string[]);
