@@ -317,7 +317,7 @@ export class InboundNumberService {
 
   static async handlePromptCitationIvr(inboundNumber: InboundNumber, ariData: AriData): Promise<void> {
     const { client, channel: inboundChannel, inboundDID } = ariData;
-    const playback = client.Playback();
+    const greetingPlayback = client.Playback();
     const courtPlayback = client.Playback();
 
     const media = this.getCourtAudio(inboundNumber);
@@ -330,10 +330,10 @@ export class InboundNumberService {
     }
 
     courtPlayback.once('PlaybackFinished', async () => {
-      await inboundChannel.play({ media: `sound:${config.promptCitation.greetingSound}` }, playback);
+      await inboundChannel.play({ media: `sound:${config.promptCitation.greetingSound}` }, greetingPlayback);
     });
 
-    let playbackTimeout: NodeJS.Timeout;
+    let playbackTimeout: NodeJS.Timeout | null = null;
     let repeats = 0;
 
     let citationNumber = '';
@@ -346,7 +346,21 @@ export class InboundNumberService {
       extension: '',
     };
 
-    (playback as Playback).on('PlaybackFinished', () => {
+    const stopAllPlaybacks = async (): Promise<void> => {
+      if (playbackTimeout) {
+        clearTimeout(playbackTimeout);
+        playbackTimeout = null;
+      }
+      await this.stopPlayback(courtPlayback);
+      await this.stopPlayback(greetingPlayback);
+
+      inboundChannel.removeAllListeners('PlaybackFinished');
+      courtPlayback.removeAllListeners('PlaybackFinished');
+      greetingPlayback.removeAllListeners('PlaybackFinished');
+      // repeats = 10;
+    };
+
+    (greetingPlayback as Playback).on('PlaybackFinished', () => {
       if (repeats >= 2) {
         playbackTimeout = setTimeout(async (): Promise<void> => {
           await this.hangupChannel(inboundChannel);
@@ -354,15 +368,13 @@ export class InboundNumberService {
       } else {
         repeats++;
         playbackTimeout = setTimeout(async (): Promise<void> => {
-          await inboundChannel.play({ media: `sound:${config.promptCitation.greetingSound}` }, playback);
+          await inboundChannel.play({ media: `sound:${config.promptCitation.greetingSound}` }, greetingPlayback);
         }, 5000);
       }
     });
 
     inboundChannel.on('ChannelDtmfReceived', async event => {
-      void this.stopPlayback(courtPlayback);
-      void this.stopPlayback(playback);
-      clearTimeout(playbackTimeout);
+      await stopAllPlaybacks();
       try {
         inboundChannel.removeAllListeners('PlaybackFinished');
       } catch (err) {
@@ -374,16 +386,20 @@ export class InboundNumberService {
       }
 
       if (event.digit === '0' && citationNumber.length === 0) {
-        inboundChannel.removeAllListeners('ChannelDtmfReceived');
         logger.debug(`Channel ${inboundChannel.id} pressed 0, starting queue processing`);
-        await InboundQueueService.promptCitationQueueHandler(inboundNumber, promptCitationData, ariData);
+        await InboundQueueService.promptCitationQueueHandler(inboundNumber, promptCitationData, ariData, [
+          courtPlayback,
+          greetingPlayback,
+        ]);
       }
 
       if (event.digit === '#') {
-        inboundChannel.removeAllListeners('ChannelDtmfReceived');
         logger.debug(`Channel ${inboundChannel.id} pressed #, sending citation notification`);
         promptCitationData.citationNumber = citationNumber;
-        await InboundQueueService.promptCitationQueueHandler(inboundNumber, promptCitationData, ariData);
+        await InboundQueueService.promptCitationQueueHandler(inboundNumber, promptCitationData, ariData, [
+          courtPlayback,
+          greetingPlayback,
+        ]);
       }
     });
   }
