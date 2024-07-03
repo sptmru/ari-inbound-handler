@@ -1,6 +1,6 @@
 import axios from 'axios';
 import * as moment from 'moment-timezone';
-import { Channel, Bridge, LiveRecording, ChannelDtmfReceived, Playback } from 'ari-client';
+import { Channel, Bridge, LiveRecording, Playback } from 'ari-client';
 
 import { dataSource } from '../data-source';
 import { InboundNumber } from '../entities/InboundNumber';
@@ -278,42 +278,6 @@ export class InboundNumberService {
     }
   }
 
-  // eslint-disable-next-line max-params
-  static async handlePromptCitationDTMFHandler(
-    inboundNumber: InboundNumber,
-    event: ChannelDtmfReceived,
-    ariData: AriData,
-    citationNumber: string = ''
-  ): Promise<void> {
-    const { channel: inboundChannel, playback, inboundDID } = ariData;
-    logger.debug(`Channel ${inboundChannel.id} pressed ${event.digit}`);
-    await this.stopPlayback(playback as Playback);
-
-    const promptCitationData: PromptCitationData = {
-      courtId: inboundNumber.court_id,
-      citationNumber: '0',
-      dialedPhoneNumber: inboundDID !== undefined ? inboundDID : '',
-      callerIdName: inboundChannel.caller.name,
-      callerIdNumber: inboundChannel.caller.number,
-      extension: '',
-    };
-
-    if (!(event.digit === '0' && citationNumber.length === 0) && event.digit !== '#') {
-      citationNumber += event.digit;
-    }
-
-    if (event.digit === '0' && citationNumber.length === 0) {
-      inboundChannel.removeAllListeners('ChannelDtmfReceived');
-      logger.debug(`Channel ${inboundChannel.id} pressed 0, starting queue processing`);
-      await InboundQueueService.promptCitationQueueHandler(inboundNumber, promptCitationData, ariData);
-    } else if (event.digit === '#') {
-      inboundChannel.removeAllListeners('ChannelDtmfReceived');
-      logger.debug(`Channel ${inboundChannel.id} pressed #, sending citation notification`);
-      promptCitationData.citationNumber = citationNumber;
-      await InboundQueueService.promptCitationQueueHandler(inboundNumber, promptCitationData, ariData);
-    }
-  }
-
   static getCourtAudio(inboundNumber: InboundNumber): string[] {
     const { court_id: courtId } = inboundNumber;
     switch (courtId.toString()) {
@@ -352,21 +316,35 @@ export class InboundNumberService {
   }
 
   static async handlePromptCitationIvr(inboundNumber: InboundNumber, ariData: AriData): Promise<void> {
-    const { client, channel: inboundChannel } = ariData;
+    const { client, channel: inboundChannel, inboundDID } = ariData;
     const playback = client.Playback();
+    const courtPlayback = client.Playback();
 
     const media = this.getCourtAudio(inboundNumber);
-    media.push(`sound:${config.promptCitation.greetingSound}`);
 
     try {
       await inboundChannel.answer();
-      await inboundChannel.play({ media }, playback);
+      await inboundChannel.play({ media: media }, courtPlayback);
     } catch (err) {
       logger.error(`No inbound channel anymore, stop prompt citation IVR`);
     }
 
+    courtPlayback.once('PlaybackFinished', async () => {
+      await inboundChannel.play({ media: `sound:${config.promptCitation.greetingSound}` }, playback);
+    });
+
     let playbackTimeout: NodeJS.Timeout;
     let repeats = 0;
+
+    let citationNumber = '';
+    const promptCitationData: PromptCitationData = {
+      courtId: inboundNumber.court_id,
+      citationNumber: '0',
+      dialedPhoneNumber: inboundDID !== undefined ? inboundDID : '',
+      callerIdName: inboundChannel.caller.name,
+      callerIdNumber: inboundChannel.caller.number,
+      extension: '',
+    };
 
     (playback as Playback).on('PlaybackFinished', () => {
       if (repeats >= 2) {
@@ -382,14 +360,31 @@ export class InboundNumberService {
     });
 
     inboundChannel.on('ChannelDtmfReceived', async event => {
+      void this.stopPlayback(courtPlayback);
+      void this.stopPlayback(playback);
+      clearTimeout(playbackTimeout);
       try {
-        void playback.stop();
-        clearTimeout(playbackTimeout);
         inboundChannel.removeAllListeners('PlaybackFinished');
       } catch (err) {
-        logger.error(`No playback anymore, nothing to stop`);
+        logger.error(`Failed to remove PlaybackFinished listener: ${err}`);
       }
-      await this.handlePromptCitationDTMFHandler(inboundNumber, event, { ...ariData, playback });
+
+      if (!(event.digit === '0' && citationNumber.length === 0) && event.digit !== '#') {
+        citationNumber += event.digit;
+      }
+
+      if (event.digit === '0' && citationNumber.length === 0) {
+        inboundChannel.removeAllListeners('ChannelDtmfReceived');
+        logger.debug(`Channel ${inboundChannel.id} pressed 0, starting queue processing`);
+        await InboundQueueService.promptCitationQueueHandler(inboundNumber, promptCitationData, ariData);
+      }
+
+      if (event.digit === '#') {
+        inboundChannel.removeAllListeners('ChannelDtmfReceived');
+        logger.debug(`Channel ${inboundChannel.id} pressed #, sending citation notification`);
+        promptCitationData.citationNumber = citationNumber;
+        await InboundQueueService.promptCitationQueueHandler(inboundNumber, promptCitationData, ariData);
+      }
     });
   }
 
