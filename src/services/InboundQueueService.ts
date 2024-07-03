@@ -10,6 +10,7 @@ import { CitationApiService } from './CitationApiService';
 import { CallbackQueue } from '../queues/CallbackQueue';
 import { PJSIPService } from './PJSIPService';
 import { WavService } from './WavService';
+import { ExtensionParametersService } from './ExtensionParametersService';
 
 export class InboundQueueService {
   static getListOfQueuePhoneNumbers(inboundNumber: InboundNumber): string[] {
@@ -302,13 +303,22 @@ export class InboundQueueService {
   static async promptCitationQueueHandler(
     inboundNumber: InboundNumber,
     promptCitationData: PromptCitationData,
-    ariData: AriData
+    ariData: AriData,
+    playbacks: Playback[] = []
   ): Promise<void> {
     const { channel: inboundChannel, client } = ariData;
+    playbacks.forEach(playback => InboundNumberService.stopPlayback(playback));
 
     const queueNumbers = InboundQueueService.getListOfQueuePhoneNumbers(inboundNumber);
+    let activeQueueNumbers = await Promise.all(
+      queueNumbers.map(async (queueNumber: string): Promise<string | null> => {
+        const extensionIsActive = await ExtensionParametersService.getExtensionStatus(queueNumber);
+        return extensionIsActive ? queueNumber : null;
+      })
+    );
+    activeQueueNumbers = activeQueueNumbers.filter(item => item !== null);
     const { available: availableQueueMembers, busy: busyQueueMembers } = await PJSIPService.findAvailableAndBusyUsers(
-      queueNumbers,
+      activeQueueNumbers as string[],
       client
     );
 
