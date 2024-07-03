@@ -347,16 +347,16 @@ export class InboundNumberService {
     };
 
     const stopAllPlaybacks = async (): Promise<void> => {
+      inboundChannel.removeAllListeners('PlaybackFinished');
+      courtPlayback.removeAllListeners('PlaybackFinished');
+      greetingPlayback.removeAllListeners('PlaybackFinished');
+
       if (playbackTimeout) {
         clearTimeout(playbackTimeout);
         playbackTimeout = null;
       }
       await this.stopPlayback(courtPlayback);
       await this.stopPlayback(greetingPlayback);
-
-      inboundChannel.removeAllListeners('PlaybackFinished');
-      courtPlayback.removeAllListeners('PlaybackFinished');
-      greetingPlayback.removeAllListeners('PlaybackFinished');
       // repeats = 10;
     };
 
