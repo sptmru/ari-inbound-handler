@@ -67,6 +67,8 @@ export const config = {
         parsedConfig?.PROMPT_CITATION_QUEUE_RING_TIME != null
           ? parseInt(parsedConfig.PROMPT_CITATION_QUEUE_RING_TIME)
           : 15,
+      rounds:
+        parsedConfig?.PROMPT_CITATION_QUEUE_ROUNDS != null ? parseInt(parsedConfig.PROMPT_CITATION_QUEUE_ROUNDS) : 3,
     },
     greetingSound:
       parsedConfig?.PROMPT_CITATION_IVR_GREETING_SOUND != null

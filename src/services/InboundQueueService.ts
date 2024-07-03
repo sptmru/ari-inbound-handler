@@ -317,10 +317,13 @@ export class InboundQueueService {
       })
     );
     activeQueueNumbers = activeQueueNumbers.filter(item => item !== null);
-    const { available: availableQueueMembers, busy: busyQueueMembers } = await PJSIPService.findAvailableAndBusyUsers(
+    let { available: availableQueueMembers, busy: busyQueueMembers } = await PJSIPService.findAvailableAndBusyUsers(
       activeQueueNumbers as string[],
       client
     );
+
+    availableQueueMembers = this.applyRoundsQuantityToAgentsList(availableQueueMembers as string[]);
+    busyQueueMembers = this.applyRoundsQuantityToAgentsList(busyQueueMembers as string[]);
 
     if (availableQueueMembers.length > 0) {
       return this.callAvailableQueueMembers(availableQueueMembers, inboundNumber, promptCitationData, ariData);
@@ -435,5 +438,14 @@ export class InboundQueueService {
     if (!success) {
       return InboundNumberService.redirectPromptCitationChannelToVoicemail(inboundChannel, inboundNumber);
     }
+  }
+
+  static applyRoundsQuantityToAgentsList(queueMembers: string[]): string[] {
+    const result: string[] = [];
+    for (let i = 0; i < config.promptCitation.queue.rounds; i++) {
+      result.push(...queueMembers);
+    }
+
+    return result;
   }
 }
