@@ -66,7 +66,7 @@ export const config = {
       ringTime:
         parsedConfig?.PROMPT_CITATION_QUEUE_RING_TIME != null
           ? parseInt(parsedConfig.PROMPT_CITATION_QUEUE_RING_TIME)
-          : 3600,
+          : 15,
     },
     greetingSound:
       parsedConfig?.PROMPT_CITATION_IVR_GREETING_SOUND != null
