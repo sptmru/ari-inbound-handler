@@ -1,6 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
 import { PromptCitationId } from '../types/PromptCitationIdEnum';
 import { CallTimeRange } from './CallTimeRange';
+import { QueueStrategies } from '../types/QueueStrategies.enum';
 
 @Entity('inbound_number')
 export class InboundNumber {
@@ -36,6 +37,9 @@ export class InboundNumber {
 
   @Column({ type: 'enum', enum: PromptCitationId, default: PromptCitationId.NO })
   prompt_citation_id: string;
+
+  @Column({ type: 'enum', enum: QueueStrategies, default: QueueStrategies.ROUNDROBIN, nullable: false })
+  queue_strategy: string;
 
   @OneToMany('CallTimeRange', 'inboundNumber')
   callTimeRanges: CallTimeRange[];
