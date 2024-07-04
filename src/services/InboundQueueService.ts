@@ -219,22 +219,7 @@ export class InboundQueueService {
     }
   }
 
-  static async callQueueMembers(
-    queueNumbers: string[],
-    ariData: AriData,
-    isPromptCitationQueue: boolean = false,
-    promptCitationData?: PromptCitationData
-  ): Promise<boolean> {
-    if (queueNumbers.length === 0) {
-      logger.error(`No queue numbers found`);
-      return false;
-    }
-
-    logger.debug(`Calling queue members ${queueNumbers.join(', ')}`);
-
-    let success = false;
-    const agentChannels: Channel[] = [];
-
+  static createCallerChannelHangupEventHandlers(agentChannels: Channel[], ariData: AriData): void {
     ariData.channel.on('StasisEnd', () => {
       const callbackRequested = CallbackService.getInstance().checkChannel(ariData.channel.id);
       if (callbackRequested) {
@@ -253,6 +238,25 @@ export class InboundQueueService {
         void InboundNumberService.hangupChannel(ch);
       }
     });
+  }
+
+  static async callQueueMembers(
+    queueNumbers: string[],
+    ariData: AriData,
+    isPromptCitationQueue: boolean = false,
+    promptCitationData?: PromptCitationData
+  ): Promise<boolean> {
+    if (queueNumbers.length === 0) {
+      logger.error(`No queue numbers found`);
+      return false;
+    }
+
+    logger.debug(`Calling queue members ${queueNumbers.join(', ')}`);
+
+    let success = false;
+    const agentChannels: Channel[] = [];
+
+    this.createCallerChannelHangupEventHandlers(agentChannels, ariData);
 
     for (const number of queueNumbers) {
       const channel = ariData.client.Channel();
