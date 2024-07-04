@@ -11,6 +11,7 @@ import { CallbackQueue } from '../queues/CallbackQueue';
 import { PJSIPService } from './PJSIPService';
 import { WavService } from './WavService';
 import { ExtensionParametersService } from './ExtensionParametersService';
+import { CallbackService } from './CallbackParametersService';
 
 export class InboundQueueService {
   static getListOfQueuePhoneNumbers(inboundNumber: InboundNumber): string[] {
@@ -189,6 +190,7 @@ export class InboundQueueService {
           void InboundNumberService.destroyBridge(bridge);
           void InboundNumberService.destroyBridge(callbackBridge);
           void InboundNumberService.hangupChannel(outboundChannel);
+          CallbackService.getInstance().removeChannel(callbackChannel.id);
         });
 
         callbackBridge.create({ type: 'mixing' }, async () => {
@@ -234,11 +236,19 @@ export class InboundQueueService {
     const agentChannels: Channel[] = [];
 
     ariData.channel.on('StasisEnd', () => {
+      const callbackRequested = CallbackService.getInstance().checkChannel(ariData.channel.id);
+      if (callbackRequested) {
+        return;
+      }
       for (const ch of agentChannels) {
         void InboundNumberService.hangupChannel(ch);
       }
     });
     ariData.channel.on('ChannelDestroyed', () => {
+      const callbackRequested = CallbackService.getInstance().checkChannel(ariData.channel.id);
+      if (callbackRequested) {
+        return;
+      }
       for (const ch of agentChannels) {
         void InboundNumberService.hangupChannel(ch);
       }
@@ -295,6 +305,10 @@ export class InboundQueueService {
     }
 
     logger.info(`Channel ${inboundChannel.id} pressed 1 to request a callback, processing`);
+
+    CallbackService.getInstance().removeChannel(inboundChannel.id); // make sure we won't add a duplicate
+    CallbackService.getInstance().addChannel(inboundChannel.id);
+
     inboundChannel.removeAllListeners('ChannelDtmfReceived');
     inboundChannel.removeAllListeners('StasisEnd');
     await InboundNumberService.stopPlayback(playback as Playback);
