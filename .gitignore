@@ -21,3 +21,6 @@ Thumbs.db
 
 # Voicemail files
 voicemail-files/*
+
+# Nodemon external config
+nodemon-ext.conf
