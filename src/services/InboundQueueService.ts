@@ -12,6 +12,8 @@ import { PJSIPService } from './PJSIPService';
 import { WavService } from './WavService';
 import { ExtensionParametersService } from './ExtensionParametersService';
 import { CallbackService } from './CallbackParametersService';
+import { QueueData } from '../types/QueueData';
+import { QueueStrategies } from '../types/QueueStrategies.enum';
 
 export class InboundQueueService {
   static getListOfQueuePhoneNumbers(inboundNumber: InboundNumber): string[] {
@@ -240,11 +242,13 @@ export class InboundQueueService {
     });
   }
 
+  // eslint-disable-next-line max-params
   static async callQueueMembers(
     queueNumbers: string[],
     ariData: AriData,
     isPromptCitationQueue: boolean = false,
-    promptCitationData?: PromptCitationData
+    promptCitationData?: PromptCitationData,
+    inboundNumber?: InboundNumber
   ): Promise<boolean> {
     if (queueNumbers.length === 0) {
       logger.error(`No queue numbers found`);
@@ -253,10 +257,87 @@ export class InboundQueueService {
 
     logger.debug(`Calling queue members ${queueNumbers.join(', ')}`);
 
-    let success = false;
+    const success = false;
     const agentChannels: Channel[] = [];
+    let callResults: boolean[] | undefined = undefined;
 
     this.createCallerChannelHangupEventHandlers(agentChannels, ariData);
+
+    switch (inboundNumber?.queue_strategy) {
+      case QueueStrategies.ROUNDROBIN:
+        await this.callQueueMembersRoundRobin({
+          queueNumbers,
+          queueChannels: agentChannels,
+          ariData,
+          isPromptCitationQueue,
+          promptCitationData,
+          success,
+        });
+        return success;
+      case QueueStrategies.RINGALL:
+        callResults = await this.callQueueMembersRingAll({
+          queueNumbers,
+          queueChannels: agentChannels,
+          ariData,
+          isPromptCitationQueue,
+          promptCitationData,
+        });
+        return callResults.some(result => result);
+      default:
+        return false;
+    }
+  }
+
+  static async callQueueMembersRingAll(queueData: QueueData): Promise<boolean[]> {
+    const {
+      queueNumbers,
+      queueChannels: agentChannels,
+      ariData,
+      isPromptCitationQueue,
+      promptCitationData,
+    } = queueData;
+
+    const queueNumbersWithoutRounds = Array.from(new Set(queueNumbers));
+
+    const callPromises = queueNumbersWithoutRounds.map(number => {
+      const channel = ariData.client.Channel();
+      agentChannels.push(channel);
+
+      // eslint-disable-next-line no-async-promise-executor
+      return new Promise<boolean>(async resolve => {
+        try {
+          await ariData.client.channels.get({ channelId: ariData.channel.id });
+          const currentSuccess = await this.callQueueMember(number, ariData, isPromptCitationQueue, promptCitationData);
+
+          if (currentSuccess) {
+            for (const ch of agentChannels) {
+              if (ch.id !== channel.id) {
+                void InboundNumberService.hangupChannel(ch);
+              }
+            }
+            resolve(true);
+          } else {
+            resolve(false);
+          }
+        } catch (err) {
+          logger.debug('Inbound channel is not alive anymore');
+          resolve(false);
+        }
+      });
+    });
+
+    return await Promise.all(callPromises);
+  }
+
+  static async callQueueMembersRoundRobin(queueData: QueueData): Promise<void> {
+    const {
+      queueNumbers,
+      queueChannels: agentChannels,
+      ariData,
+      isPromptCitationQueue,
+      promptCitationData,
+    } = queueData;
+    let { success } = queueData;
 
     for (const number of queueNumbers) {
       const channel = ariData.client.Channel();
@@ -276,8 +357,6 @@ export class InboundQueueService {
         logger.debug('Inbound channel is not alive anymore');
       }
     }
-
-    return success;
   }
 
   static async inboundQueueHandler(
@@ -295,7 +374,7 @@ export class InboundQueueService {
 
     logger.debug(`Starting inbound queue for ${inboundDID} and channel ${inboundChannel.name}`);
     const queueNumbers = InboundQueueService.getListOfQueuePhoneNumbers(inboundNumber);
-    const success = await InboundQueueService.callQueueMembers(queueNumbers, ariData);
+    const success = await InboundQueueService.callQueueMembers(queueNumbers, ariData, false, undefined, inboundNumber);
 
     if (!success) {
       void InboundNumberService.redirectInboundChannelToVoicemail(inboundChannel, inboundNumber);
@@ -396,7 +475,13 @@ export class InboundQueueService {
     logger.debug(
       `Starting inbound queue for ${promptCitationData.dialedPhoneNumber} and channel ${inboundChannel.name}`
     );
-    let success = await InboundQueueService.callQueueMembers(queueMembers, { ...ariData }, true, promptCitationData);
+    let success = await InboundQueueService.callQueueMembers(
+      queueMembers,
+      { ...ariData },
+      true,
+      promptCitationData,
+      inboundNumber
+    );
 
     await InboundNumberService.stopMusicOnHold(inboundChannel);
 
@@ -462,7 +547,8 @@ export class InboundQueueService {
       queueMembers,
       { ...ariData, playback },
       true,
-      promptCitationData
+      promptCitationData,
+      inboundNumber
     );
 
     clearInterval(playCallbackInfoSoundInterval);
