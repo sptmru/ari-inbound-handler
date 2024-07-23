@@ -76,7 +76,19 @@ void (async (): Promise<void> => {
       exit(1);
     });
 
-  process.on('unhandledRejection', (reason, promise) => {
-    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  // eslint-disable-next-line arrow-body-style
+  process.on('unhandledRejection', () => {
+    return;
+    //console.error('Unhandled Rejection at:', promise, 'reason:', reason);
   });
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  process.on('uncaughtException', () => {
+    // Do nothing to suppress the log
+  });
+
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+  console.error = () => {
+    // Do nothing to suppress the log
+  };
 })();
