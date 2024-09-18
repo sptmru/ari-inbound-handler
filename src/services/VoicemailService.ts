@@ -72,6 +72,18 @@ export class VoicemailService {
     return await dataSource.getRepository(Voicemail).findOne({ where: { filename, origmailbox: mailbox } });
   }
 
+ static async getSentVoicemailByFilename(mailbox: string, filename: string): Promise<Voicemail | null> {
+    return await dataSource.getRepository(Voicemail).findOne({ where: { filename, origmailbox: mailbox, sent: true } });
+  }
+  static async deleteVoiceMailByFileNameAndMailBox(mailbox: string, filename: string): Promise<Voicemail | null> {
+    return await dataSource.getRepository(Voicemail).delete({ filename, origmailbox: mailbox } );
+  }
+
+  static async updateOldDeleteldUnSentVoiceMailFileNameByFileNameAndMailBox(filename: string, oldvoicemail: Voicemail) {
+    oldvoicemail.filename = `${filename}-old`;
+    await dataSource.getRepository(Voicemail).save(oldvoicemail);
+  }
+
   static async markVoicemailAsSent(voicemail: Voicemail): Promise<void> {
     voicemail.sent = true;
     await dataSource.getRepository(Voicemail).save(voicemail);
