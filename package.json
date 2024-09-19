@@ -7,6 +7,7 @@
     "start:dev": "ts-node --swc src/app.ts",
     "build": "tsc && tsc-alias",
     "start": "ts-node --swc src/app.ts",
+    "start:cronwavtoS3": "ts-node --swc src/uploadWavFilesToS3Cron.ts",
     "start:cronjob": "ts-node --swc src/cronjob.ts",
     "start:test": "ts-node --swc src/test.ts",
     "start:inbound_route_17087298587": "ts-node --swc src/inbound_route_17087298587.ts",
@@ -30,8 +31,10 @@
     "tsc-alias": "^1.8.8"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.654.0",
     "@types/fluent-ffmpeg": "^2.1.24",
     "ari-client": "^2.2.0",
+    "aws-sdk": "^2.1691.0",
     "axios": "^1.6.2",
     "dotenv": "^16.3.1",
     "fluent-ffmpeg": "^2.1.2",

@@ -17,6 +17,10 @@ export const config = {
     rootPassword: parsedConfig?.DB_ROOT_PASSWORD != null ? parsedConfig.DB_ROOT_PASSWORD : 'root',
     name: parsedConfig?.DB_NAME != null ? parsedConfig.DB_NAME : 'inbound_numbers'
   },
+  aws: {
+    accesskeyId: parsedConfig?.AWS_ACCESS_KEY_ID,
+    secretaccesskey: parsedConfig?.AWS_SECRET_ACCESS_KEY
+  },
   smtp: {
     host: parsedConfig?.SMTP_HOST != null ? parsedConfig.SMTP_HOST : 'smtp.example.com',
     port: parsedConfig?.SMTP_PORT != null ? parseInt(parsedConfig.SMTP_PORT) : 587,
