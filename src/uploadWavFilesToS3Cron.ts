@@ -28,7 +28,6 @@ const BUCKET = 'pts-phone-recordings';
   }
   const voicemailDir = config.voicemail.s3directory;
   const voiceMailsNotUploadedToS3 = await VoicemailService.getVoicemailNotUploadedFilesToS3();
-  console.log(voiceMailsNotUploadedToS3, "voiceMailsNotUploadedToS3")
   const inBoundNumbers = await InboundNumberService.getInboundNumbers();
   for ( const voiceMail of voiceMailsNotUploadedToS3) {
     const filePath  = `${voicemailDir}/${voiceMail.origmailbox}/INBOX/${voiceMail.filename}.wav`;
