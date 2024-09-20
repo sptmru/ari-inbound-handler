@@ -49,7 +49,7 @@ export const config = {
   voicemail: {
     context: parsedConfig?.VOICEMAIL_CONTEXT != null ? parsedConfig.VOICEMAIL_CONTEXT : 'to-voicemail',
     directory: parsedConfig?.VOICEMAIL_DIRECTORY != null ? parsedConfig.VOICEMAIL_DIRECTORY : '/opt/voicemail',
-    s3directory: parsedConfig?.VOICEMAIL_DIRECTORY_S3_UPLOAD != null ? parsedConfig.VOICEMAIL_DIRECTORY : '/opt/voicemail'
+    s3directory: parsedConfig?.VOICEMAIL_DIRECTORY_S3_UPLOAD != null ? parsedConfig.VOICEMAIL_DIRECTORY_S3_UPLOAD : '/opt/voicemail'
   },
   callRecording: {
     directory: parsedConfig?.CALL_RECORDING_DIRECTORY != null ? parsedConfig.CALL_RECORDING_DIRECTORY : 'finished',

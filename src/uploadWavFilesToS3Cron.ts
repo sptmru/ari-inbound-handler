@@ -5,6 +5,10 @@ import { VoicemailService } from './services/VoicemailService';
 import { InboundNumberService } from './services/InboundNumberService';
 import { config } from './config/config';
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import microtime from 'microtime';
+
+
+
 // Create an S3 client
 const s3Client = new S3Client({
   region:'us-east-1',
@@ -39,9 +43,8 @@ const BUCKET = 'pts-phone-recordings';
       const isFileExist = await VoicemailService.fileExists(filePath); 
       if(isFileExist) {
         const readableStream = fs.createReadStream(filePath);
-        const getFileCreatedDate = fs.statSync(filePath);
-        const dateOfUpload = `${new Date(getFileCreatedDate.birthtime).toJSON().slice(0, 10).split('-').join('')}`;
-        const fileNameToSet = Math.floor(new Date(getFileCreatedDate.birthtime).getTime()/1000);
+        const dateOfUpload = `${new Date(voiceMail.origdate).toJSON().slice(0, 10).split('-').join('')}`;
+        const fileNameToSet = microtime.now(voiceMail.origtime)
         const s3filePathKey = `voicemail/${court_id}/${dateOfUpload}/${fileNameToSet}.wav`;
         const fileUrl = `https://${BUCKET}.s3.amazonaws.com/${s3filePathKey}`;
         console.log(`Uploading file from ${filePath} to S3 ${fileUrl}`);
