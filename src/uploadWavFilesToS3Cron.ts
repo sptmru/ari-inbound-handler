@@ -31,12 +31,7 @@ const BUCKET = 'pts-phone-recordings';
   console.log(voiceMailsNotUploadedToS3, "voiceMailsNotUploadedToS3")
   const inBoundNumbers = await InboundNumberService.getInboundNumbers();
   for ( const voiceMail of voiceMailsNotUploadedToS3) {
-    // this block below is added to handle mnt folder files
-    let filePath  = `${voicemailDir}/${voiceMail.origmailbox}/INBOX/${voiceMail.filename}.wav`;
-    if((voiceMail.filename?.includes('old')) ?? false) {
-       filePath  = `${voicemailDir}/${voiceMail.origmailbox}/INBOX/${voiceMail.filename?.replace('-old','')}.wav`;
-    }
-    // this block above is  added to handle mnt folder files
+    const filePath  = `${voicemailDir}/${voiceMail.origmailbox}/INBOX/${voiceMail.filename}.wav`;
     console.log(`Uploading file from ${filePath} to S3`);
     const court_id = (inBoundNumbers.filter( a => a.voicemail == voiceMail.origmailbox ))[0]?.court_id;
     if(court_id != null) {
