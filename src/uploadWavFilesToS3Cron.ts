@@ -6,12 +6,12 @@ import { InboundNumberService } from './services/InboundNumberService';
 import { config } from './config/config';
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 // Create an S3 client
-const s3Client = new S3Client({
+const s3Client = new S3Client([{
   credentials: {
     accessKeyId: (config.aws.accesskeyId != null) ? config.aws.accesskeyId: '' ,
-    secretAccessKey: (config.aws.secretaccesskey != null) ? config.aws.secretaccesskey: '',
+    secretAccessKey: (config.aws.secretaccesskey != null) ? config.aws.secretaccesskey: ''
   },
-});
+}]);
 
 const BUCKET = 'pts-phone-recordings';
 (async () => {
@@ -46,7 +46,8 @@ const BUCKET = 'pts-phone-recordings';
         const params = {
           Bucket: BUCKET, 
           Key: s3filePathKey, 
-          Body: readableStream
+          Body: readableStream,
+          Region: 'us-east-1'
         };   
         try {
           s3Client.send(new PutObjectCommand(params));
