@@ -40,7 +40,7 @@ const BUCKET = 'pts-phone-recordings';
         const getFileCreatedDate = fs.statSync(filePath);
         const dateOfUpload = `${new Date(getFileCreatedDate.birthtime).toJSON().slice(0, 10).split('-').join('')}`;
         const fileNameToSet = Math.floor(new Date(getFileCreatedDate.birthtime).getTime()/1000);
-        const s3filePathKey = `${court_id}/${dateOfUpload}-test/${fileNameToSet}.wav`;
+        const s3filePathKey = `voicemail/${court_id}/${dateOfUpload}/${fileNameToSet}.wav`;
         const fileUrl = `https://${BUCKET}.s3.amazonaws.com/${s3filePathKey}`;
         console.log(`Uploading file from ${filePath} to S3 ${fileUrl}`);
         const params = {
