@@ -72,10 +72,14 @@ export class VoicemailService {
     return await dataSource.getRepository(Voicemail).findOne({ where: { filename, origmailbox: mailbox } });
   }
 
+  static async getVoicemailNotUploadedFilesToS3(): Promise<Voicemail[]> {
+    return await dataSource.getRepository(Voicemail).find({ where: { is_exported: false } });
+  }
+
  static async getSentVoicemailByFilename(mailbox: string, filename: string): Promise<Voicemail | null> {
     return await dataSource.getRepository(Voicemail).findOne({ where: { filename, origmailbox: mailbox, sent: true } });
   }
-  static async deleteVoiceMailByFileNameAndMailBox(mailbox: string, filename: string): Promise<Voicemail | null> {
+  static async deleteVoiceMailByFileNameAndMailBox(mailbox: string, filename: string) {
     return await dataSource.getRepository(Voicemail).delete({ filename, origmailbox: mailbox } );
   }
 
@@ -86,6 +90,12 @@ export class VoicemailService {
 
   static async markVoicemailAsSent(voicemail: Voicemail): Promise<void> {
     voicemail.sent = true;
+    await dataSource.getRepository(Voicemail).save(voicemail);
+  }
+
+  static async updateFileNameToS3UrlAndMarkAsUploaded(url: string ,voicemail: Voicemail): Promise<void> {
+    voicemail.filename = url;
+    voicemail.is_exported = true;
     await dataSource.getRepository(Voicemail).save(voicemail);
   }
 
@@ -107,6 +117,8 @@ export class VoicemailService {
       return false; // File does not exist
     }
   }
+
+
   static convertWavToMp3(wavFilePath: string, mp3FilePath: string): Promise<void> {
     return new Promise((resolve, reject) => {
       ffmpeg(wavFilePath)
