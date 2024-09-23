@@ -2,7 +2,7 @@
 import { logger } from './misc/Logger';
 import { dataSource } from './data-source';
 import { VoicemailService } from './services/VoicemailService';
-import http from 'http';
+import https from 'https';
 
 (async () => {
   try {
@@ -17,7 +17,7 @@ import http from 'http';
   for ( const voiceMail of voiceMailsNotUploadedToS3) {
 
         const filename = (voiceMail.filename != null) ? voiceMail.filename : 'test';
-        http.request(filename, { method: 'HEAD' }, (res) => {
+        https.request(filename, { method: 'HEAD' }, (res) => {
             if(res.statusCode != 200) {
                console.log(filename, "file")
             }
