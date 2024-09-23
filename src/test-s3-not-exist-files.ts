@@ -24,7 +24,7 @@ import axios from 'axios';
             if(isUrl(filename)) {
                 await axios.get(filename).catch(function (error) {
                     if(error.status == '404') {
-                        console.log(filename);
+                        console.log(filename, voiceMail.id);
                     }
                             });
             }
