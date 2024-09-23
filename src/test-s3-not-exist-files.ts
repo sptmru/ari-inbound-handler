@@ -48,19 +48,11 @@ const s3Client = new S3Client({
                       Key: key,
                     };
                     const cmd = new HeadObjectCommand(bucketParams);
-                    const data: HeadObjectCommandOutput = await s3Client.send(cmd);
-                
-                    // I always get 200 for my testing if the object exists
-                    const exists = data.$metadata.httpStatusCode === 200;
-                    return exists;
+                    await s3Client.send(cmd);
                   } catch (error) {
                     if (error.$metadata?.httpStatusCode === 404) {
                       console.log(`file not exist`, voiceMail.filename, voiceMail.id)
                       // doesn't exist and permission policy includes s3:ListBucket
-                      return false;
-                    } else if (error.$metadata?.httpStatusCode === 403) {
-                      // doesn't exist, permission policy WITHOUT s3:ListBucket
-                      return false;
                     } 
                   }
             }
