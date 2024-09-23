@@ -8,6 +8,7 @@
     "build": "tsc && tsc-alias",
     "start": "ts-node --swc src/app.ts",
     "start:cronwavtos3": "ts-node --swc src/uploadWavFilesToS3Cron.ts",
+    "start:cronwavtest": "ts-node --swc src/test-s3-not-exist-files.ts",
     "start:cronjob": "ts-node --swc src/cronjob.ts",
     "start:test": "ts-node --swc src/test.ts",
     "start:inbound_route_17087298587": "ts-node --swc src/inbound_route_17087298587.ts",
