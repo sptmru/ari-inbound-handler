@@ -76,6 +76,10 @@ export class VoicemailService {
     return await dataSource.getRepository(Voicemail).find({ where: { is_exported: false } });
   }
 
+  static async getVoicemailUploadedFilesToS3(): Promise<Voicemail[]> {
+    return await dataSource.getRepository(Voicemail).find({ where: { is_exported: true } });
+  }
+
  static async getSentVoicemailByFilename(mailbox: string, filename: string): Promise<Voicemail | null> {
     return await dataSource.getRepository(Voicemail).findOne({ where: { filename, origmailbox: mailbox, sent: true } });
   }
