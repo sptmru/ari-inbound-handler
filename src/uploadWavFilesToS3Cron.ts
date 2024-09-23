@@ -49,7 +49,7 @@ const BUCKET = 'pts-phone-recordings';
           Region: 'us-east-1'
         };   
         try {
-          s3Client.send(new PutObjectCommand(params));
+          await s3Client.send(new PutObjectCommand(params));
           await VoicemailService.updateFileNameToS3UrlAndMarkAsUploaded(fileUrl, voiceMail)
           console.log("file is uploaded", fileUrl );
         }
