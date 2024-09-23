@@ -2,8 +2,26 @@
 import { logger } from './misc/Logger';
 import { dataSource } from './data-source';
 import { VoicemailService } from './services/VoicemailService';
-import axios from 'axios';
+import type {
+    HeadObjectCommandInput,
+    HeadObjectCommandOutput,
+  } from "@aws-sdk/client-s3";
+  import {
+      S3Client,
+      HeadObjectCommand,
+  } from '@aws-sdk/client-s3';
+import { config } from './config/config';
 
+  // Create an S3 client
+const s3Client = new S3Client({
+    region:'us-east-1',
+    credentials: {
+      accessKeyId: (config.aws.accesskeyId != null) ? config.aws.accesskeyId: '' ,
+      secretAccessKey: (config.aws.secretaccesskey != null) ? config.aws.secretaccesskey: ''
+    },
+  });
+
+  const BUCKET = 'pts-phone-recordings';
 
 (async () => {
   try {
@@ -22,12 +40,31 @@ import axios from 'axios';
                 catch(e){ return false; }
             }
             if(isUrl(filename)) {
-                await axios.get(filename).catch(function (error) {
-                    if(error.status == '404') {
-                        console.log(filename, voiceMail.id);
-                    }
-                            });
+                const { pathname } = new URL(filename);
+                const [,, key] = pathname.split('/')
+                try {
+                    const bucketParams: HeadObjectCommandInput = {
+                      Bucket: BUCKET,
+                      Key: key,
+                    };
+                    const cmd = new HeadObjectCommand(bucketParams);
+                    const data: HeadObjectCommandOutput = await s3Client.send(cmd);
+                
+                    // I always get 200 for my testing if the object exists
+                    const exists = data.$metadata.httpStatusCode === 200;
+                    return exists;
+                  } catch (error) {
+                    if (error.$metadata?.httpStatusCode === 404) {
+                      console.log(`file not exist`, voiceMail.filename, voiceMail.id)
+                      // doesn't exist and permission policy includes s3:ListBucket
+                      return false;
+                    } else if (error.$metadata?.httpStatusCode === 403) {
+                      // doesn't exist, permission policy WITHOUT s3:ListBucket
+                      return false;
+                    } 
+                  }
             }
+           
           
 
   }
