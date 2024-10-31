@@ -49,6 +49,13 @@ const s3Client = new S3Client({
           await s3Client.send(new PutObjectCommand(params));
           await VoicemailService.updateFileNameToS3UrlAndMarkAsUploaded(fileUrl, voiceMail)
           logger.info(`File uploaded to S3: ${fileUrl}`);
+
+          const inboundNumberData = await InboundNumberService.getInboundNumberByVoicemail(voiceMail.origmailbox);
+          if (inboundNumberData) {
+            await InboundNumberService.sendPushNotification(config.pushNotificationsUrl, voiceMail, inboundNumberData);
+          }
+
+          await VoicemailService.deleteFile(filePath);
         }
         catch (err) {
           logger.error(`Error: upload failed for file ${voiceMail.filename} — error ${err.code}: ${err.message}`);
