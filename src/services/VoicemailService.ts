@@ -2,6 +2,7 @@ import fs from 'fs';
 import readline from 'readline';
 import path from 'path';
 import ffmpeg from 'fluent-ffmpeg';
+import { v4 as uuidv4 } from 'uuid';
 
 import { dataSource } from '../data-source';
 import { Voicemail } from '../entities/Voicemail';
@@ -48,9 +49,9 @@ export class VoicemailService {
       return {};
     }
   }
-  static async parseVoicemailTextFile(voicemailDir: string, voicemailFilename: string): Promise<Voicemail> {
+  static async parseVoicemailTextFile(voicemailDir: string, voicemailFilename: string, voicemailDataFilename: string): Promise<Voicemail> {
     const voicemail = { filename: voicemailFilename };
-    const filePath = `${voicemailDir}/${voicemailFilename}.txt`;
+    const filePath = `${voicemailDir}/${voicemailDataFilename}.txt`;
 
     const fileStream = fs.createReadStream(filePath);
 
@@ -124,6 +125,29 @@ export class VoicemailService {
     }
   }
 
+  static async deleteFile(filePath: string): Promise<void> {
+    try {
+      await fs.promises.unlink(filePath);
+      logger.info(`deleteFile: ${filePath} was successfully deleted`);
+    } catch (error) {
+      if (error.code !== 'ENOENT') { 
+        logger.error(`deleteFile: failed to delete ${filePath} — error ${error.message}`);
+      }
+    }
+  }
+
+  static async renameFile(oldFilePath: string, newFilePath: string): Promise<void> {
+    try {
+      await fs.promises.rename(oldFilePath, newFilePath);
+      console.log(`renameFile: file renamed from ${oldFilePath} to ${newFilePath}`);
+    } catch (error) {
+      console.error(`renameFile: failed to rename ${oldFilePath} to ${newFilePath} - error ${error.message}`);
+    }
+  }
+
+  static generateRandomFilename(): string { 
+    return `${Date.now()}${uuidv4()}`;
+  }
 
   static convertWavToMp3(wavFilePath: string, mp3FilePath: string): Promise<void> {
     return new Promise((resolve, reject) => {
