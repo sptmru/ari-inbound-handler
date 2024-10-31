@@ -8,8 +8,6 @@ import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import microtime from 'microtime';
 
 
-
-// Create an S3 client
 const s3Client = new S3Client({
   region:'us-east-1',
   credentials: {
@@ -18,7 +16,6 @@ const s3Client = new S3Client({
   },
 });
 
-const BUCKET = 'pts-phone-recordings';
 (async (): Promise<void> => {
   try {
     await dataSource.initialize();
@@ -40,10 +37,10 @@ const BUCKET = 'pts-phone-recordings';
         const dateOfUpload = `${new Date(voiceMail.origdate).toJSON().slice(0, 10).split('-').join('')}`;
         const fileNameToSet = microtime.now(voiceMail.origtime)
         const s3filePathKey = `voicemail/${courtId}/${dateOfUpload}/${fileNameToSet}.wav`;
-        const fileUrl = `https://${BUCKET}.s3.amazonaws.com/${s3filePathKey}`;
+        const fileUrl = `https://${config.aws.s3Bucket}.s3.amazonaws.com/${s3filePathKey}`;
         logger.info(`Uploading file from ${filePath} to S3 ${fileUrl}`);
         const params = {
-          Bucket: BUCKET, 
+          Bucket: config.aws.s3Bucket, 
           Key: s3filePathKey, 
           Body: readableStream,
           Region: 'us-east-1',

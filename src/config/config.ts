@@ -20,6 +20,7 @@ export const config = {
   aws: {
     accesskeyId: parsedConfig?.AWS_ACCESS_KEY_ID,
     secretaccesskey: parsedConfig?.AWS_SECRET_ACCESS_KEY,
+    s3Bucket: parsedConfig?.AWS_S3_BUCKET,
   },
   smtp: {
     host: parsedConfig?.SMTP_HOST != null ? parsedConfig.SMTP_HOST : 'smtp.example.com',
