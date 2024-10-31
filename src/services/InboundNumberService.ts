@@ -220,7 +220,7 @@ export class InboundNumberService {
       await channel.startMoh();
       logger.debug(`Music on hold started on channel ${channel.id}`);
     } catch (err) {
-      logger.error(`Failed to start music on hold on channel ${channel.id}`);
+      logger.debug(`Failed to start music on hold on channel ${channel.id}`);
     }
   }
 
@@ -229,7 +229,7 @@ export class InboundNumberService {
       await channel.stopMoh();
       logger.debug(`Music on hold stopped on channel ${channel.id}`);
     } catch (err) {
-      logger.error(`Failed to stop music on hold on channel ${channel.id}`);
+      logger.debug(`Failed to stop music on hold on channel ${channel.id}`);
     }
   }
 
@@ -237,7 +237,7 @@ export class InboundNumberService {
     try {
       await playback.stop();
     } catch (err) {
-      logger.error(`No  playback anymore, nothing to stop`);
+      logger.debug(`No  playback anymore, nothing to stop`);
     }
   }
 
@@ -437,5 +437,27 @@ export class InboundNumberService {
         err
       );
     }
+  }
+
+  static async handleNoAnswerInPromptCitationQueue(
+    inboundChannel: Channel,
+    inboundNumber: InboundNumber,
+    ariData: AriData,
+    promptCitationData: PromptCitationData
+  ): Promise<void> {
+    logger.debug(`handleNoAnswerInPromptCitationQueue: no answer in prompt citation queue`);
+    const applyOverflow = await this.checkOverflowStatus(inboundNumber);
+    if (applyOverflow) {
+      logger.debug(`handleNoAnswerInPromptCitationQueue: overflow status is active for inbound number ${inboundNumber.phone}, calling overflow number ${inboundNumber.overflow_number}`);
+      const overflowCallResult = await InboundQueueService.callQueueMember(inboundNumber.overflow_number, ariData, true, promptCitationData);
+      if (overflowCallResult) {
+        logger.debug(`handleNoAnswerInPromptCitationQueue: overflow call was successful`);
+        return;
+      }
+      logger.debug(`handleNoAnswerInPromptCitationQueue: overflow call was not successful, redirecting to voicemail`);
+      return this.redirectPromptCitationChannelToVoicemail(inboundChannel, inboundNumber);
+    }
+
+    return this.redirectInboundChannelToVoicemail(inboundChannel, inboundNumber);
   }
 }
