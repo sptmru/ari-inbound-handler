@@ -31,7 +31,7 @@ const BUCKET = 'pts-phone-recordings';
   const inBoundNumbers = await InboundNumberService.getInboundNumbers();
   for ( const voiceMail of voiceMailsNotUploadedToS3) {
     const filePath  = `${voicemailDir}/${voiceMail.origmailbox}/INBOX/${voiceMail.filename}.wav`;
-    console.log(`Uploading file from ${filePath} to S3`);
+    logger.info(`Uploading file from ${filePath} to S3`);
     const courtId = (inBoundNumbers.filter( a => a.voicemail == voiceMail.origmailbox ))[0]?.court_id;
     if(courtId != null) {
       const isFileExist = await VoicemailService.fileExists(filePath); 
@@ -41,7 +41,7 @@ const BUCKET = 'pts-phone-recordings';
         const fileNameToSet = microtime.now(voiceMail.origtime)
         const s3filePathKey = `voicemail/${courtId}/${dateOfUpload}/${fileNameToSet}.wav`;
         const fileUrl = `https://${BUCKET}.s3.amazonaws.com/${s3filePathKey}`;
-        console.log(`Uploading file from ${filePath} to S3 ${fileUrl}`);
+        logger.info(`Uploading file from ${filePath} to S3 ${fileUrl}`);
         const params = {
           Bucket: BUCKET, 
           Key: s3filePathKey, 
@@ -51,16 +51,16 @@ const BUCKET = 'pts-phone-recordings';
         try {
           await s3Client.send(new PutObjectCommand(params));
           await VoicemailService.updateFileNameToS3UrlAndMarkAsUploaded(fileUrl, voiceMail)
-          console.log("file is uploaded", fileUrl );
+          logger.info(`File uploaded to S3: ${fileUrl}`);
         }
         catch (err) {
-          console.log(`Error: Upload Failed for file ${voiceMail.filename}`, err.code, err.message);
+          logger.error(`Error: upload failed for file ${voiceMail.filename} — error ${err.code}: ${err.message}`);
         }  
       } else {
-        console.log(`File with path ${filePath} not exist`)
+        logger.error(`File with path ${filePath} not exist`)
       }
     } else {
-      console.log(`court id not found for ${ voiceMail.origmailbox}`)
+      logger.error(`Court id not found for ${voiceMail.origmailbox}`)
     }
   }
   process.exit(0);

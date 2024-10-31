@@ -130,11 +130,11 @@ export class VoicemailService {
       ffmpeg(wavFilePath)
         .output(mp3FilePath)
         .on('end', () => {
-          console.log('Conversion ended');
+          logger.info(`convertWavToMp3: conversion ended for ${wavFilePath}`);
           resolve();
         })
         .on('error', err => {
-          console.log('Error occurred: ' + err.message);
+          logger.error(`convertWavToMp3: error occurred for ${wavFilePath}: ${err.message}`);
           reject();
         })
         .run();
