@@ -28,6 +28,8 @@ void (async (): Promise<void> => {
       );
       
       await VoicemailService.deleteFile(`${voicemailDir}/${dirName}/INBOX/${voicemailInitialFileName}.txt`);
+      await VoicemailService.deleteFile(`${voicemailDir}/${dirName}/INBOX/${voicemailInitialFileName}.WAV`);
+      await VoicemailService.deleteFile(`${voicemailDir}/${dirName}/INBOX/${voicemailInitialFileName}.gsm`);
 
       await VoicemailService.renameFile(
         `${voicemailDir}/${dirName}/INBOX/${voicemailInitialFileName}.wav`, 

@@ -56,8 +56,6 @@ const s3Client = new S3Client({
           }
 
           await VoicemailService.deleteFile(filePath);
-          await VoicemailService.deleteFile(`${voicemailDir}/${voiceMail.origmailbox}/INBOX/${voiceMail.filename}.WAV`);
-          await VoicemailService.deleteFile(`${voicemailDir}/${voiceMail.origmailbox}/INBOX/${voiceMail.filename}.gsm`);
         }
         catch (err) {
           logger.error(`Error: upload failed for file ${voiceMail.filename} — error ${err.code}: ${err.message}`);
