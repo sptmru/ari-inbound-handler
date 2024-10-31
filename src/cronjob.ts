@@ -1,6 +1,4 @@
-import fs from 'fs';
 import { exit } from 'process';
-
 import { logger } from './misc/Logger';
 import { dataSource } from './data-source';
 import { VoicemailService } from './services/VoicemailService';
@@ -8,7 +6,6 @@ import { InboundNumberService } from './services/InboundNumberService';
 import { MailService } from './services/MailService';
 import { config } from './config/config';
 
-const pushNotificationsUrl = config.pushNotificationsUrl;
 
 void (async (): Promise<void> => {
   try {
@@ -19,52 +16,47 @@ void (async (): Promise<void> => {
   }
 
   const voicemailDir = config.voicemail.directory;
-
   const voicemailFileNames = await VoicemailService.getVoicemailFiles(voicemailDir);
 
-  // TODO: needs refactoring
+  for (const [dirName, files] of Object.entries(voicemailFileNames)) {
+    for (const voicemailInitialFileName of files as string[]) { 
+      const voicemailFileName = VoicemailService.generateRandomFilename();
+      const voicemailData = await VoicemailService.parseVoicemailTextFile(
+        `${voicemailDir}/${dirName}/INBOX`,
+        voicemailFileName,
+        voicemailInitialFileName
+      );
+      
+      await VoicemailService.deleteFile(`${voicemailDir}/${dirName}/INBOX/${voicemailInitialFileName}.txt`);
 
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  if (voicemailFileNames !== null) {
-    for (const [dirName, files] of Object.entries(voicemailFileNames)) {
-      for (const voicemailFile of files as string[]) {
-        const voicemailAlreadySent = await VoicemailService.fileExists(
-          `${voicemailDir}/${dirName}/INBOX/${voicemailFile}.sent`
-        );
-        if (voicemailAlreadySent) {
-          continue;
-        }
-        const voicemailData = await VoicemailService.parseVoicemailTextFile(
-          `${voicemailDir}/${dirName}/INBOX`,
-          voicemailFile
-        );
-        let voicemail = await VoicemailService.getVoicemailByFilename(dirName, voicemailFile);
+      await VoicemailService.renameFile(
+        `${voicemailDir}/${dirName}/INBOX/${voicemailInitialFileName}.wav`, 
+        `${voicemailDir}/${dirName}/INBOX/${voicemailFileName}.wav`
+      );
 
-     if (voicemail != null) {
-          await VoicemailService.updateOldDeleteldUnSentVoiceMailFileNameByFileNameAndMailBox(voicemailFile, voicemail);
+      const voicemail = await VoicemailService.addVoicemail(voicemailData);
+      if (!voicemail) {
+        logger.error(`Error adding voicemail ${voicemailFileName} (initial name: ${voicemailInitialFileName}) to database`);
+        continue;
+      }
+
+      const inboundNumberData = await InboundNumberService.getInboundNumberByVoicemail(voicemail.origmailbox);
+      await VoicemailService.convertWavToMp3(
+        `${voicemailDir}/${dirName}/INBOX/${voicemailFileName}.wav`,
+        `${voicemailDir}/${dirName}/INBOX/${voicemailFileName}.mp3`
+      );
+
+      if (inboundNumberData) {
+        const emails = InboundNumberService.getListOfEmails(inboundNumberData);
+        for (const email of emails) {
+          const emailText = `CallerID: ${voicemail.callerid}\nCalled number: ${inboundNumberData.phone}`;
+          const subject = `${inboundNumberData.court_name} New Voicemail From ${voicemail.callerid}`;
+          await MailService.sendMail(email, emailText, subject, [
+            `${voicemailDir}/${dirName}/INBOX/${voicemailFileName}.wav`,
+          ]);
         }
-          await fs.promises.writeFile(`${voicemailDir}/${dirName}/INBOX/${voicemailFile}.sent`, '');
-          voicemail = await VoicemailService.addVoicemail(voicemailData);
-          if (voicemail === null) continue;
-          const inboundNumberData = await InboundNumberService.getInboundNumberByVoicemail(voicemail.origmailbox);
-          if (inboundNumberData) {
-            await InboundNumberService.sendPushNotification(pushNotificationsUrl, voicemail, inboundNumberData);
-          }
-          await VoicemailService.convertWavToMp3(
-            `${voicemailDir}/${dirName}/INBOX/${voicemailFile}.wav`,
-            `${voicemailDir}/${dirName}/INBOX/${voicemailFile}.mp3`
-          );
-          if (inboundNumberData) {
-            const emails = InboundNumberService.getListOfEmails(inboundNumberData);
-            for (const email of emails) {
-              const emailText = `CallerID: ${voicemail.callerid}\nCalled number: ${inboundNumberData.phone}`;
-              const subject = `${inboundNumberData.court_name} New Voicemail From ${voicemail.callerid}`;
-              await MailService.sendMail(email, emailText, subject, [
-                `${voicemailDir}/${dirName}/INBOX/${voicemailFile}.wav`,
-              ]);
-            }
-          }
-        
+        await VoicemailService.markVoicemailAsSent(voicemail);
+        await VoicemailService.deleteFile(`${voicemailDir}/${dirName}/INBOX/${voicemailFileName}.mp3`);
       }
     }
   }
