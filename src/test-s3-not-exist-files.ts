@@ -2,16 +2,11 @@
 import { logger } from './misc/Logger';
 import { dataSource } from './data-source';
 import { VoicemailService } from './services/VoicemailService';
-import type {
-    HeadObjectCommandInput,
-  } from "@aws-sdk/client-s3";
-  import {
-      S3Client,
-      HeadObjectCommand,
-  } from '@aws-sdk/client-s3';
+import type { HeadObjectCommandInput } from "@aws-sdk/client-s3";
+import { S3Client, HeadObjectCommand } from '@aws-sdk/client-s3';
 import { config } from './config/config';
 
-  // Create an S3 client
+
 const s3Client = new S3Client({
   region:'us-east-1',
   credentials: {
@@ -19,8 +14,6 @@ const s3Client = new S3Client({
     secretAccessKey: (config.aws.secretaccesskey != null) ? config.aws.secretaccesskey: '',
   },
 });
-
-const BUCKET = 'pts-phone-recordings';
 
 const isUrl = (inputString: string): boolean => {
   try { 
@@ -49,7 +42,7 @@ const isUrl = (inputString: string): boolean => {
 
       try {
         const bucketParams: HeadObjectCommandInput = {
-          Bucket: BUCKET,
+          Bucket: config.aws.s3Bucket,
           Key: pathname,
         };
         const cmd = new HeadObjectCommand(bucketParams);
