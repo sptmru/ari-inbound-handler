@@ -14,12 +14,12 @@ const s3Client = new S3Client({
   region:'us-east-1',
   credentials: {
     accessKeyId: (config.aws.accesskeyId != null) ? config.aws.accesskeyId: '' ,
-    secretAccessKey: (config.aws.secretaccesskey != null) ? config.aws.secretaccesskey: ''
+    secretAccessKey: (config.aws.secretaccesskey != null) ? config.aws.secretaccesskey: '',
   },
 });
 
 const BUCKET = 'pts-phone-recordings';
-(async () => {
+(async (): Promise<void> => {
   try {
     await dataSource.initialize();
     logger.debug('Data Source initialized');
@@ -32,21 +32,21 @@ const BUCKET = 'pts-phone-recordings';
   for ( const voiceMail of voiceMailsNotUploadedToS3) {
     const filePath  = `${voicemailDir}/${voiceMail.origmailbox}/INBOX/${voiceMail.filename}.wav`;
     console.log(`Uploading file from ${filePath} to S3`);
-    const court_id = (inBoundNumbers.filter( a => a.voicemail == voiceMail.origmailbox ))[0]?.court_id;
-    if(court_id != null) {
+    const courtId = (inBoundNumbers.filter( a => a.voicemail == voiceMail.origmailbox ))[0]?.court_id;
+    if(courtId != null) {
       const isFileExist = await VoicemailService.fileExists(filePath); 
       if(isFileExist) {
         const readableStream = fs.createReadStream(filePath);
         const dateOfUpload = `${new Date(voiceMail.origdate).toJSON().slice(0, 10).split('-').join('')}`;
         const fileNameToSet = microtime.now(voiceMail.origtime)
-        const s3filePathKey = `voicemail/${court_id}/${dateOfUpload}/${fileNameToSet}.wav`;
+        const s3filePathKey = `voicemail/${courtId}/${dateOfUpload}/${fileNameToSet}.wav`;
         const fileUrl = `https://${BUCKET}.s3.amazonaws.com/${s3filePathKey}`;
         console.log(`Uploading file from ${filePath} to S3 ${fileUrl}`);
         const params = {
           Bucket: BUCKET, 
           Key: s3filePathKey, 
           Body: readableStream,
-          Region: 'us-east-1'
+          Region: 'us-east-1',
         };   
         try {
           await s3Client.send(new PutObjectCommand(params));
@@ -64,4 +64,4 @@ const BUCKET = 'pts-phone-recordings';
     }
   }
   process.exit(0);
-})();
+})().then(() => {}).catch(() => {});
