@@ -19,7 +19,7 @@ export class InboundQueueService {
   static getListOfQueuePhoneNumbers(inboundNumber: InboundNumber): string[] {
     return inboundNumber.queue_numbers.split(',').map(phone => phone.trim());
   }
-
+ 
   static async callQueueMember(
     phoneNumber: string,
     ariData: AriData,
@@ -439,9 +439,11 @@ export class InboundQueueService {
     );
     availableQueueMembers = availableQueueMembers.filter(item => item !== '');
 
-    availableQueueMembers = this.applyRoundsQuantityToAgentsList(availableQueueMembers as string[]);
-    busyQueueMembers = this.applyRoundsQuantityToAgentsList(busyQueueMembers as string[]);
-
+    if (inboundNumber.queue_strategy === QueueStrategies.ROUNDROBIN) {
+      availableQueueMembers = this.applyRoundsQuantityToAgentsList(availableQueueMembers as string[]);
+      busyQueueMembers = this.applyRoundsQuantityToAgentsList(busyQueueMembers as string[]);
+    }
+    
     if (availableQueueMembers.length > 0) {
       return this.callAvailableQueueMembers(availableQueueMembers, inboundNumber, promptCitationData, ariData);
     }
@@ -451,7 +453,7 @@ export class InboundQueueService {
       return this.callBusyQueueMembers(busyQueueMembers, inboundNumber, promptCitationData, ariData);
     }
 
-    return InboundNumberService.redirectPromptCitationChannelToVoicemail(inboundChannel, inboundNumber);
+    return InboundNumberService.handleNoAnswerInPromptCitationQueue(inboundChannel, inboundNumber, ariData, promptCitationData);
   }
 
   static async callAvailableQueueMembers(
@@ -475,7 +477,7 @@ export class InboundQueueService {
     logger.debug(
       `Starting inbound queue for ${promptCitationData.dialedPhoneNumber} and channel ${inboundChannel.name}`
     );
-    let success = await InboundQueueService.callQueueMembers(
+    const success = await InboundQueueService.callQueueMembers(
       queueMembers,
       { ...ariData },
       true,
@@ -485,13 +487,8 @@ export class InboundQueueService {
 
     await InboundNumberService.stopMusicOnHold(inboundChannel);
 
-    const applyOverflow = await InboundNumberService.checkOverflowStatus(inboundNumber);
-    if (applyOverflow) {
-      success = await this.callQueueMember(inboundNumber.overflow_number, ariData, true, promptCitationData);
-    }
-
     if (!success) {
-      return InboundNumberService.redirectPromptCitationChannelToVoicemail(inboundChannel, inboundNumber);
+      return InboundNumberService.handleNoAnswerInPromptCitationQueue(inboundChannel, inboundNumber, ariData, promptCitationData);
     }
   }
 
@@ -543,7 +540,7 @@ export class InboundQueueService {
     logger.debug(
       `Starting inbound queue for ${promptCitationData.dialedPhoneNumber} and channel ${inboundChannel.name}`
     );
-    let success = await InboundQueueService.callQueueMembers(
+    const success = await InboundQueueService.callQueueMembers(
       queueMembers,
       { ...ariData, playback },
       true,
@@ -554,13 +551,8 @@ export class InboundQueueService {
     clearInterval(playCallbackInfoSoundInterval);
     await InboundNumberService.stopMusicOnHold(inboundChannel);
 
-    const applyOverflow = await InboundNumberService.checkOverflowStatus(inboundNumber);
-    if (applyOverflow) {
-      success = await this.callQueueMember(inboundNumber.overflow_number, ariData, true, promptCitationData);
-    }
-
     if (!success) {
-      return InboundNumberService.redirectPromptCitationChannelToVoicemail(inboundChannel, inboundNumber);
+      return InboundNumberService.handleNoAnswerInPromptCitationQueue(inboundChannel, inboundNumber, ariData, promptCitationData);
     }
   }
 
