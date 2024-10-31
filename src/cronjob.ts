@@ -39,7 +39,10 @@ void (async (): Promise<void> => {
           voicemailFile
         );
         let voicemail = await VoicemailService.getVoicemailByFilename(dirName, voicemailFile);
-        if (voicemail === null) {
+
+     if (voicemail != null) {
+          await VoicemailService.updateOldDeleteldUnSentVoiceMailFileNameByFileNameAndMailBox(voicemailFile, voicemail);
+        }
           await fs.promises.writeFile(`${voicemailDir}/${dirName}/INBOX/${voicemailFile}.sent`, '');
           voicemail = await VoicemailService.addVoicemail(voicemailData);
           if (voicemail === null) continue;
@@ -61,7 +64,7 @@ void (async (): Promise<void> => {
               ]);
             }
           }
-        }
+        
       }
     }
   }

@@ -12,7 +12,7 @@ export class Voicemail {
   @PrimaryGeneratedColumn()
   id?: number;
 
-  @Column('varchar', { length: 50, nullable: false })
+  @Column('varchar', { length: 300, nullable: false })
   filename?: string;
 
   @Column('varchar', { length: 50, nullable: false })
@@ -62,4 +62,7 @@ export class Voicemail {
 
   @Column({ type: 'enum', enum: IsListened, default: IsListened.NOT_LISTENED })
   is_listened?: string;
+
+  @Column('bool', { default: false })
+  is_exported?: boolean;
 }

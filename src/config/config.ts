@@ -17,6 +17,10 @@ export const config = {
     rootPassword: parsedConfig?.DB_ROOT_PASSWORD != null ? parsedConfig.DB_ROOT_PASSWORD : 'root',
     name: parsedConfig?.DB_NAME != null ? parsedConfig.DB_NAME : 'inbound_numbers',
   },
+  aws: {
+    accesskeyId: parsedConfig?.AWS_ACCESS_KEY_ID,
+    secretaccesskey: parsedConfig?.AWS_SECRET_ACCESS_KEY,
+  },
   smtp: {
     host: parsedConfig?.SMTP_HOST != null ? parsedConfig.SMTP_HOST : 'smtp.example.com',
     port: parsedConfig?.SMTP_PORT != null ? parseInt(parsedConfig.SMTP_PORT) : 587,
@@ -45,6 +49,7 @@ export const config = {
   voicemail: {
     context: parsedConfig?.VOICEMAIL_CONTEXT != null ? parsedConfig.VOICEMAIL_CONTEXT : 'to-voicemail',
     directory: parsedConfig?.VOICEMAIL_DIRECTORY != null ? parsedConfig.VOICEMAIL_DIRECTORY : '/opt/voicemail',
+    s3directory: parsedConfig?.VOICEMAIL_DIRECTORY_S3_UPLOAD != null ? parsedConfig.VOICEMAIL_DIRECTORY_S3_UPLOAD : '/opt/voicemail',
   },
   callRecording: {
     directory: parsedConfig?.CALL_RECORDING_DIRECTORY != null ? parsedConfig.CALL_RECORDING_DIRECTORY : 'finished',
