@@ -27,16 +27,16 @@ void (async (): Promise<void> => {
         voicemailFileName,
         voicemailInitialFileName
       );
-      
-      await VoicemailService.deleteFile(`${voicemailDir}/${dirName}/INBOX/${voicemailInitialFileName}.txt`);
-      await VoicemailService.deleteFile(`${voicemailDir}/${dirName}/INBOX/${voicemailInitialFileName}.WAV`);
-      await VoicemailService.deleteFile(`${voicemailDir}/${dirName}/INBOX/${voicemailInitialFileName}.gsm`);
 
       logger.debug(`Renaming voicemail ${voicemailInitialFileName} to ${voicemailFileName}`);
       await VoicemailService.renameFile(
         `${voicemailDir}/${dirName}/INBOX/${voicemailInitialFileName}.wav`, 
         `${voicemailDir}/${dirName}/INBOX/${voicemailFileName}.wav`
       );
+      
+      await VoicemailService.deleteFile(`${voicemailDir}/${dirName}/INBOX/${voicemailInitialFileName}.txt`);
+      await VoicemailService.deleteFile(`${voicemailDir}/${dirName}/INBOX/${voicemailInitialFileName}.WAV`);
+      await VoicemailService.deleteFile(`${voicemailDir}/${dirName}/INBOX/${voicemailInitialFileName}.gsm`);
 
       const voicemail = await VoicemailService.addVoicemail(voicemailData);
       if (!voicemail) {
