@@ -381,6 +381,16 @@ export class InboundQueueService {
     }
     
     if (!success) {
+      const applyOverflow = await InboundNumberService.checkOverflowStatus(inboundNumber);
+      if (applyOverflow) {
+        logger.debug(`inboundQueueHandler: overflow status is active for inbound number ${inboundNumber.phone}, calling overflow number ${inboundNumber.overflow_number}`);
+        const overflowCallResult = await InboundQueueService.callQueueMember(inboundNumber.overflow_number, ariData, false);
+        
+        if (overflowCallResult) {
+          logger.debug(`inboundQueueHandler: overflow call was successful`);
+          return;
+        }
+      }
       void InboundNumberService.redirectInboundChannelToVoicemail(inboundChannel, inboundNumber);
     }
   }
