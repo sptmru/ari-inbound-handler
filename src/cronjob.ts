@@ -20,6 +20,7 @@ void (async (): Promise<void> => {
 
   for (const [dirName, files] of Object.entries(voicemailFileNames)) {
     for (const voicemailInitialFileName of files as string[]) { 
+      logger.debug(`Processing voicemail ${voicemailInitialFileName} in ${dirName}`);
       const voicemailFileName = VoicemailService.generateRandomFilename();
       const voicemailData = await VoicemailService.parseVoicemailTextFile(
         `${voicemailDir}/${dirName}/INBOX`,
@@ -31,6 +32,7 @@ void (async (): Promise<void> => {
       await VoicemailService.deleteFile(`${voicemailDir}/${dirName}/INBOX/${voicemailInitialFileName}.WAV`);
       await VoicemailService.deleteFile(`${voicemailDir}/${dirName}/INBOX/${voicemailInitialFileName}.gsm`);
 
+      logger.debug(`Renaming voicemail ${voicemailInitialFileName} to ${voicemailFileName}`);
       await VoicemailService.renameFile(
         `${voicemailDir}/${dirName}/INBOX/${voicemailInitialFileName}.wav`, 
         `${voicemailDir}/${dirName}/INBOX/${voicemailFileName}.wav`
@@ -43,12 +45,14 @@ void (async (): Promise<void> => {
       }
 
       const inboundNumberData = await InboundNumberService.getInboundNumberByVoicemail(voicemail.origmailbox);
+      logger.debug(`Converting voicemail ${voicemailFileName} to mp3`);
       await VoicemailService.convertWavToMp3(
         `${voicemailDir}/${dirName}/INBOX/${voicemailFileName}.wav`,
         `${voicemailDir}/${dirName}/INBOX/${voicemailFileName}.mp3`
       );
 
       if (inboundNumberData) {
+        logger.debug(`Sending voicemail ${voicemailFileName} to ${inboundNumberData.phone}`);
         const emails = InboundNumberService.getListOfEmails(inboundNumberData);
         for (const email of emails) {
           const emailText = `CallerID: ${voicemail.callerid}\nCalled number: ${inboundNumberData.phone}`;
@@ -58,6 +62,7 @@ void (async (): Promise<void> => {
           ]);
         }
         await VoicemailService.markVoicemailAsSent(voicemail);
+        logger.debug(`Voicemail ${voicemailFileName} sent to ${inboundNumberData.phone}`);
         await VoicemailService.deleteFile(`${voicemailDir}/${dirName}/INBOX/${voicemailFileName}.mp3`);
       }
     }
