@@ -374,8 +374,12 @@ export class InboundQueueService {
 
     logger.debug(`Starting inbound queue for ${inboundDID} and channel ${inboundChannel.name}`);
     const queueNumbers = InboundQueueService.getListOfQueuePhoneNumbers(inboundNumber);
-    const success = await InboundQueueService.callQueueMembers(queueNumbers, ariData, false, undefined, inboundNumber);
 
+    let success = false;
+    if (queueNumbers.length > 0) {
+      success = await InboundQueueService.callQueueMembers(queueNumbers, ariData, false, undefined, inboundNumber);
+    }
+    
     if (!success) {
       void InboundNumberService.redirectInboundChannelToVoicemail(inboundChannel, inboundNumber);
     }
