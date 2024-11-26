@@ -102,4 +102,7 @@ export const config = {
         : 'http://promptcitationapi.ltd',
   },
   timezone: parsedConfig?.TIMEZONE != null ? parsedConfig.TIMEZONE : 'America/New_York',
+  holiday: {
+    greetingSound: parsedConfig?.HOLIDAY_GREETING_SOUND != null ? parsedConfig.HOLIDAY_GREETING_SOUND : 'holiday-greeting',
+  },
 };
