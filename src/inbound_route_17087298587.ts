@@ -30,6 +30,21 @@ void (async (): Promise<void> => {
       }
 
       logger.debug(`Inbound call to ${inboundDID}`);
+      const inboundNumber = await InboundNumberService.getInboundNumber(inboundDID);
+
+      const ariData = {
+        channel,
+        client,
+        appName: config.ari.app,
+        trunkName: config.trunkName,
+        callerId: inboundDID,
+        inboundDID,
+      };
+
+      if (inboundNumber && inboundNumber.play_holiday_message) {
+        await InboundNumberService.playHolidayMessage(ariData);
+        return;
+      }
 
       const internalNumber: Array<string> = [];
       const playback: Playback = client.Playback();

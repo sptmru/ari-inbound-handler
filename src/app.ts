@@ -53,6 +53,11 @@ void (async (): Promise<void> => {
         inboundDID,
       };
 
+      if (inboundNumber.play_holiday_message) {
+        await InboundNumberService.playHolidayMessage(ariData);
+        return;
+      }
+
       if (inboundNumber.prompt_citation_id === PromptCitationId.YES) {
         logger.debug(`Starting prompt citation IVR`);
         await InboundNumberService.handlePromptCitationIvr(inboundNumber, ariData);

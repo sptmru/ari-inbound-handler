@@ -460,4 +460,32 @@ export class InboundNumberService {
 
     return this.redirectInboundChannelToVoicemail(inboundChannel, inboundNumber);
   }
+
+  static async playHolidayMessage(ariData: AriData): Promise<void> {
+    const { channel: inboundChannel, client } = ariData;
+    const holidayMessagePlayback = client.Playback();
+    const secondHolidayMessagePlayback = client.Playback();
+
+    try {
+      await inboundChannel.answer();
+      logger.debug(`Playing holiday message on channel ${inboundChannel.name}`);
+      await inboundChannel.play({ media: `sound:${config.holiday.greetingSound}` }, holidayMessagePlayback);
+    } catch (err) {
+      logger.error(`Error while playing holiday message on channel ${inboundChannel.name}`, err);
+    }
+
+
+    holidayMessagePlayback.once('PlaybackFinished', async () => {
+      try {
+        logger.debug(`Playing second holiday message on channel ${inboundChannel.name}`);
+        await inboundChannel.play({ media: `sound:${config.holiday.greetingSound}` }, secondHolidayMessagePlayback);
+      } catch (err) {
+        logger.error(`Error while playing holiday message on channel ${inboundChannel.name}`, err);
+      }
+    });
+
+    secondHolidayMessagePlayback.once('PlaybackFinished', async () => {
+      await this.hangupChannel(inboundChannel);
+    });
+  }
 }
