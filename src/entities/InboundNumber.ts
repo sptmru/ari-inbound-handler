@@ -43,4 +43,7 @@ export class InboundNumber {
 
   @OneToMany('CallTimeRange', 'inboundNumber')
   callTimeRanges: CallTimeRange[];
+
+  @Column('bool', { default: false })
+  play_holiday_message: boolean;
 }
