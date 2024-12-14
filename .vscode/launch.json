@@ -17,8 +17,6 @@
         "<node_internals>/**"
       ],
       "restart": true,
-      "console": "integratedTerminal",
-      "internalConsoleOptions": "neverOpen",
       "outFiles": [
         "${workspaceFolder}/build/**/*.js"
       ],
@@ -40,8 +38,6 @@
         "<node_internals>/**"
       ],
       "restart": true,
-      "console": "integratedTerminal",
-      "internalConsoleOptions": "neverOpen",
       "outFiles": [
         "${workspaceFolder}/build/**/*.js"
       ],
