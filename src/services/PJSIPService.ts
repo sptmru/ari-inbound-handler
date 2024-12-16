@@ -52,6 +52,22 @@ export class PJSIPService {
     return { available, busy };
   }
 
+  static async findAvailableUsers(users: string[], client: Client): Promise<string[]> {
+    const available: string[] = [];
+
+    for (const user of users) {
+      const userOnline = await this.checkIfUserIsOnline(user, client);
+      if (!userOnline) {
+        continue;
+      }
+
+      const userAvailable = await this.checkIfUserIsAvailable(user, client);
+      userAvailable && available.push(user);
+    }
+
+    return available;
+  }
+
   static async checkIfChannelExists(channelId: string, client: Client): Promise<boolean> {
     const channels = await client.channels.list();
     const channel = channels.find(ch => ch.id === channelId);

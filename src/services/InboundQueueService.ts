@@ -34,9 +34,15 @@ export class InboundQueueService {
     logger.debug(`Calling queue member ${phoneNumber}`);
 
     const inboundChannelExists = await PJSIPService.checkIfChannelExists(inboundChannel.id, client);
+    const userIsAvailable = await PJSIPService.checkIfUserIsAvailable(phoneNumber, client);
 
     if (!inboundChannelExists) {
       logger.debug(`Inbound channel ${inboundChannel.id} does not exist anymore`);
+      return false;
+    }
+
+    if (!userIsAvailable) {
+      logger.debug(`Queue member ${phoneNumber} is busy`);
       return false;
     }
 
@@ -461,7 +467,7 @@ export class InboundQueueService {
     if (availableQueueMembers.length > 0) {
       return this.callAvailableQueueMembers(availableQueueMembers, inboundNumber, promptCitationData, ariData);
     }
-
+    
     if (busyQueueMembers.length > 0) {
       // start the queue
       return this.callBusyQueueMembers(busyQueueMembers, inboundNumber, promptCitationData, ariData);
