@@ -363,7 +363,17 @@ export class InboundNumberService {
     (greetingPlayback as Playback).on('PlaybackFinished', () => {
       if (repeats >= 2) {
         playbackTimeout = setTimeout(async (): Promise<void> => {
-          await this.hangupChannel(inboundChannel);
+          try {
+            inboundChannel.removeAllListeners('PlaybackFinished');
+          } catch (err) {
+            logger.error(`Failed to remove PlaybackFinished listener: ${err}`);
+          }
+
+          logger.debug(`Channel ${inboundChannel.id} has not pressed anything, starting queue processing`);
+          await InboundQueueService.promptCitationQueueHandler(inboundNumber, promptCitationData, ariData, [
+            courtPlayback,
+            greetingPlayback,
+          ]);
         }, 5000);
       } else {
         repeats++;
