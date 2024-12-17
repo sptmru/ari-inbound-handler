@@ -373,6 +373,8 @@ export class InboundQueueService {
     const { channel: inboundChannel } = ariData;
     const liveRecording = await CallRecordingService.createRecordingChannel(ariData);
 
+    await this.startMusicOnHold(inboundChannel);
+
     inboundChannel.on('StasisEnd', async (event: StasisEnd, channel: Channel): Promise<void> => {
       await InboundNumberService.stopRecording(channel, liveRecording);
       logger.debug(`${event.type} on ${channel.name}`);
@@ -444,6 +446,8 @@ export class InboundQueueService {
   ): Promise<void> {
     const { channel: inboundChannel, client } = ariData;
     playbacks.forEach(playback => InboundNumberService.stopPlayback(playback));
+
+    await this.startMusicOnHold(inboundChannel);
 
     const queueNumbers = InboundQueueService.getListOfQueuePhoneNumbers(inboundNumber);
     let { available: availableQueueMembers, busy: busyQueueMembers } = await PJSIPService.findAvailableAndBusyUsers(
@@ -583,5 +587,21 @@ export class InboundQueueService {
     }
 
     return result;
+  }
+
+  static async startMusicOnHold(channel: Channel): Promise<void> {
+    try {
+      await channel.startMoh();
+    } catch (err) {
+      logger.error(`Error starting music on hold on channel ${channel.id}: ${err}`);
+    }
+  }
+
+  static async stopMusicOnHold(channel: Channel): Promise<void> {
+    try {
+      await channel.stopMoh();
+    } catch (err) {
+      logger.error(`Error stopping music on hold on channel ${channel.id}: ${err}`);
+    }
   }
 }
