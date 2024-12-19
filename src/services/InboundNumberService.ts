@@ -265,17 +265,30 @@ export class InboundNumberService {
 
   static async handleInboundQueue(inboundNumber: InboundNumber, inboundDID: string, ariData: AriData): Promise<void> {
     const { client, channel: inboundChannel } = ariData;
-    if (inboundNumber.is_queue) {
-      await InboundQueueService.inboundQueueHandler(inboundNumber, inboundDID, {
-        client,
-        channel: inboundChannel,
-        appName: config.ari.app,
-        trunkName: config.trunkName,
-        callerId: inboundDID,
-      });
-    } else {
-      void this.redirectInboundChannelToVoicemail(inboundChannel, inboundNumber);
+    const messagePlayback = client.Playback();
+
+    try {
+      await inboundChannel.answer();
+      if (inboundNumber.message.length !== 0) {
+        await inboundChannel.play({ media: `sound:${inboundNumber.message}` }, messagePlayback);
+      }
+    } catch (err) {
+      logger.error(`No inbound channel anymore, stop handling inbound queue`);
     }
+
+    messagePlayback.once('PlaybackFinished', async () => {
+      if (inboundNumber.is_queue) {
+        await InboundQueueService.inboundQueueHandler(inboundNumber, inboundDID, {
+          client,
+          channel: inboundChannel,
+          appName: config.ari.app,
+          trunkName: config.trunkName,
+          callerId: inboundDID,
+        });
+      } else {
+        void this.redirectInboundChannelToVoicemail(inboundChannel, inboundNumber);
+      }
+    });
   }
 
   static getCourtAudio(inboundNumber: InboundNumber): string[] {
@@ -318,15 +331,18 @@ export class InboundNumberService {
   static async handlePromptCitationIvr(inboundNumber: InboundNumber, ariData: AriData): Promise<void> {
     const { client, channel: inboundChannel, inboundDID } = ariData;
     const greetingPlayback = client.Playback();
-    const courtPlayback = client.Playback();
+    const messagePlayback = client.Playback();
 
     try {
       await inboundChannel.answer();
+      if (inboundNumber.message.length !== 0) {
+        await inboundChannel.play({ media: `sound:${inboundNumber.message}` }, messagePlayback);
+      }
     } catch (err) {
       logger.error(`No inbound channel anymore, stop prompt citation IVR`);
     }
 
-    courtPlayback.once('PlaybackFinished', async () => {
+    messagePlayback.once('PlaybackFinished', async () => {
       await inboundChannel.play({ media: `sound:${config.promptCitation.greetingSound}` }, greetingPlayback);
     });
 
@@ -345,14 +361,14 @@ export class InboundNumberService {
 
     const stopAllPlaybacks = async (): Promise<void> => {
       inboundChannel.removeAllListeners('PlaybackFinished');
-      courtPlayback.removeAllListeners('PlaybackFinished');
+      messagePlayback.removeAllListeners('PlaybackFinished');
       greetingPlayback.removeAllListeners('PlaybackFinished');
 
       if (playbackTimeout) {
         clearTimeout(playbackTimeout);
         playbackTimeout = null;
       }
-      await this.stopPlayback(courtPlayback);
+      await this.stopPlayback(messagePlayback);
       await this.stopPlayback(greetingPlayback);
       // repeats = 10;
     };
@@ -368,7 +384,7 @@ export class InboundNumberService {
 
           logger.debug(`Channel ${inboundChannel.id} has not pressed anything, starting queue processing`);
           await InboundQueueService.promptCitationQueueHandler(inboundNumber, promptCitationData, ariData, [
-            courtPlayback,
+            messagePlayback,
             greetingPlayback,
           ]);
         }, 5000);
@@ -395,7 +411,7 @@ export class InboundNumberService {
       if (event.digit === '0' && citationNumber.length === 0) {
         logger.debug(`Channel ${inboundChannel.id} pressed 0, starting queue processing`);
         await InboundQueueService.promptCitationQueueHandler(inboundNumber, promptCitationData, ariData, [
-          courtPlayback,
+          messagePlayback,
           greetingPlayback,
         ]);
       }
@@ -404,7 +420,7 @@ export class InboundNumberService {
         logger.debug(`Channel ${inboundChannel.id} pressed #, sending citation notification`);
         promptCitationData.citationNumber = citationNumber;
         await InboundQueueService.promptCitationQueueHandler(inboundNumber, promptCitationData, ariData, [
-          courtPlayback,
+          messagePlayback,
           greetingPlayback,
         ]);
       }
