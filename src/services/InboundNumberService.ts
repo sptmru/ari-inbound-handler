@@ -320,14 +320,8 @@ export class InboundNumberService {
     const greetingPlayback = client.Playback();
     const courtPlayback = client.Playback();
 
-    const media = this.getCourtAudio(inboundNumber);
-    logger.info(`Court audio file name for channel ID ${inboundChannel.id} and court ${inboundNumber.court_id}: ${media}`);
-
     try {
       await inboundChannel.answer();
-      if (media.length !== 0) {
-        await inboundChannel.play({ media: media }, courtPlayback);
-      }
     } catch (err) {
       logger.error(`No inbound channel anymore, stop prompt citation IVR`);
     }
