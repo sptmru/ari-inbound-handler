@@ -342,8 +342,18 @@ export class InboundNumberService {
       logger.error(`No inbound channel anymore, stop prompt citation IVR`);
     }
 
+    let greetingSound;
+    if (inboundNumber.citation_ivr_prompt && inboundNumber.citation_ivr_prompt.length !== 0) {
+      greetingSound = inboundNumber.citation_ivr_prompt;
+      logger.info(`Greeting sound for inbound number ${inboundNumber.phone} is ${greetingSound}`);
+    } else {
+      greetingSound = config.promptCitation.greetingSound;
+      logger.info(`Greeting sound for inbound number ${inboundNumber.phone} is default: ${greetingSound}`);
+    }
+
     messagePlayback.once('PlaybackFinished', async () => {
-      await inboundChannel.play({ media: `sound:${config.promptCitation.greetingSound}` }, greetingPlayback);
+      logger.info(`Playing greeting sound ${greetingSound} for inbound number ${inboundNumber.phone}`);
+      await inboundChannel.play({ media: `sound:${greetingSound}` }, greetingPlayback);
     });
 
     let playbackTimeout: NodeJS.Timeout | null = null;
@@ -391,7 +401,7 @@ export class InboundNumberService {
       } else {
         repeats++;
         playbackTimeout = setTimeout(async (): Promise<void> => {
-          await inboundChannel.play({ media: `sound:${config.promptCitation.greetingSound}` }, greetingPlayback);
+          await inboundChannel.play({ media: `sound:${greetingSound}` }, greetingPlayback);
         }, 5000);
       }
     });
