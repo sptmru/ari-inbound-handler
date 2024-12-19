@@ -46,4 +46,7 @@ export class InboundNumber {
 
   @Column('bool', { default: false })
   play_holiday_message: boolean;
+
+  @Column('varchar', { length: 255, nullable: true })
+  citation_ivr_prompt: string;
 }
